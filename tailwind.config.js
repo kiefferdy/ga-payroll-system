@@ -22,6 +22,8 @@ export default {
       dark_gray : '#585858',
       search_text_gray : '#CFCFCF',
       search_stroke_gray: '#E9E9E9',
+      black : '#000000',
+      white : '#FFFFFF',
     },
     fontFamily: {
       'sans': ['Wix Madefor Text', 'sans-serif'],
