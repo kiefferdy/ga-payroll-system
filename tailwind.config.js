@@ -9,7 +9,23 @@ export default {
     "./app.vue",
   ],
   theme: {
-    extend: {},
+    extend: {
+    },
+    colors: {
+      primary_green : '#C4ECC8',
+      dark_green : '#689E6E',
+      button_green : '#75AF59',
+      clock_in_green : '#26B82B',
+      clock_out_red : '#B82626',
+      primary_white : '#F8F8F8',
+      off_white : '#ECECEC',
+      dark_gray : '#585858',
+      search_text_gray : '#CFCFCF',
+      search_stroke_gray: '#E9E9E9',
+    },
+    fontFamily: {
+      'sans': ['Wix Madefor Text', 'sans-serif'],
+    },
   },
   plugins: [],
 }
