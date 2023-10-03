@@ -1,11 +1,14 @@
 <template>
-   <div class="default-bg flex flex-col min-w-screen min-h-screen">
+   <div class="default-bg min-w-screen min-h-screen">
       <div class="bg-primary_white h-14 py-2 px-10">
          <img src="~/assets/images/logo.png" class=" h-10">
       </div>
-      <div class="bg-primary_white flex self-center w-3/6 py-5 px-10 my-10 rounded-lg drop-shadow-md">
-         <NuxtPage/>
+      <div class="flex flex-col items-center py-28">
+         <div class="bg-primary_white py-2 px-10 container h-3/4 max-w-4xl rounded-lg">
+            <NuxtPage/>
+         </div>         
       </div>
+
 
    </div>
 </template>
