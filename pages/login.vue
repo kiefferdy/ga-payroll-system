@@ -3,7 +3,7 @@
       TODO:
       Implement preloader
     -->
-   <div class="flex flex-row justify-between">
+   <div class="flex flex-row justify-center py-32">
       <div >
          <h1 class="text-2xl mb-6">Account Login</h1>
          <label class="font-bold">Username<br></label>
