@@ -13,6 +13,7 @@
     "@nuxt/devtools": "latest",
     "@nuxtjs/supabase": "^1.1.2",
     "@nuxtjs/tailwindcss": "^6.8.0",
+    "daisyui": "^3.9.3",
     "nuxt": "^3.7.4",
     "prettier": "^3.0.3",
     "prettier-plugin-tailwindcss": "^0.5.4",

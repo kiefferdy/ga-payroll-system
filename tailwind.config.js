@@ -29,6 +29,6 @@ export default {
       'sans': ['Wix Madefor Text', 'sans-serif'],
     },
   },
-  plugins: [],
+  plugins: [require("daisyui")],
 }
 
