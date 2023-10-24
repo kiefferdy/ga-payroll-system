@@ -3,23 +3,24 @@
       TODO:
       Implement preloader
     -->
-   <div class="flex flex-row justify-center py-32">
-      <div >
-         <h1 class="text-2xl mb-6">Account Login</h1>
-         <label class="font-bold">Username<br></label>
-         <input v-model="email" type="text" class="w-full bg-off_white border-button_green border-b-2 mb-6 px-2 py-1" required> <!-- TODO: must use v-model, check nuxt docs for aid-->
-         
-         <label class="font-bold pt-">Password<br></label>
-         <input v-model="password" type="password" class="w-full bg-off_white border-button_green border-b-2 mb-8 px-2 py-1" required>  <!-- TODO: must use v-model, check nuxt docs for aid-->
 
-         <button @click="signIn" class="bg-button_green rounded-full px-8 py-0.5 font-bold text-white">LOGIN</button> <!-- TODO: Check if user exists, if user exists it will redirect to clock in page, else must show error message-->
+   <div class="card card-side">
+      <div class="card-body">
+         <h1 class="card-title text-black">Account Login</h1>
+
+         <label class="label-text text-black mt-4">Email</label>
+         <input v-model="email" type="text" class="input-s border-2 border-primary_green bg-primary_white rounded w-72" required>
+         
+         <label class="label-text text-black mt-4">Password</label>
+         <input v-model="password" type="password" class="input-s border-2 border-primary_green bg-primary_white rounded w-72" required>
+         
+         <div class="card-actions">
+            <button @click="signIn" class="btn btn-xs mt-4 rounded-full text-white bg-button_green btn-ghost w-24">Login</button>
+         </div>
          <div v-if="wrong" class="error">Email or Passowrd is Incorrect</div>
       </div>
-      <div class="bg-search_text_gray ps-0.5 mx-10 shadow">
-      </div>
-      <div class="">
-         <img src="~assets/images/logo.png" class="w-80">
-      </div>
+      <div class="divider divider-horizontal"></div>
+      <figure><img src="~assets/images/logo.png" class="w-80"></figure>
    </div>
 
 </template>
