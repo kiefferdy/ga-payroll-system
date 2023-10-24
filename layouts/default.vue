@@ -11,11 +11,9 @@
    </div> -->
 
    <div class="default-bg min-w-screen min-h-screen flex flex-col justify-center">
-      <div class="flex flex-row self-center card h-[37rem] w-[65rem] bg-primary_white">
-         <div class="card-content flex self-center">
-            <div class="flex items-center">
-               <NuxtPage />
-            </div>
+      <div class=" card self-center items-center justify-center  h-[37rem] w-[65rem] bg-primary_white">
+         <div class="card-content">
+            <NuxtPage/>
          </div>
       </div>   
    </div>
