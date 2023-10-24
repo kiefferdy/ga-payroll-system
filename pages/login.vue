@@ -1,9 +1,4 @@
 <template>
-   <!-- 
-      TODO:
-      Implement preloader
-    -->
-
    <div class="card card-side">
       <div class="card-body">
          <h1 class="card-title text-black">Account Login</h1>
