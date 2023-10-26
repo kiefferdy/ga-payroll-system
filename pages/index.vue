@@ -1,32 +1,32 @@
 <template>
    <div class="card text-black flex items-center justify-center h-[30rem] w-[60rem]">
-     <div class="flex flex-row self-end">
-       <p class="mr-4 ">Status:</p>
-       <div class="bg-clock_out_red rounded-full w-2.5 h-2.5 mx-1 mt-2"></div>
-       <p>Out</p>
-     </div>
-     <h1 class="card-title text-2xl mt-24">{{ greeting }},</h1>
-     <p>{{ username }}</p>
-     <p class="mt-5 mb-1.5">{{ currentTime }}</p>
-     <div class="card-actions">
-       <button class="btn btn-circle btn-ghost w-36 h-36 mt-1 bg-clock_in_green text-white"> <NuxtLink to="/otp">Time In</NuxtLink></button>
-     </div>
-     <div class="card-actions self-end mt-24">
-       <button @click="logout" class="font-bold btn btn-sm btn-ghost btn-circle w-32 ">Logout<img class="mx-2 w-4 h-4" src="~/assets/icons/exit.png"></button>
-     </div>
+      <div class="flex flex-row self-end">
+         <p class="mr-4 ">Status:</p>
+         <div class="bg-clock_out_red rounded-full w-2.5 h-2.5 mx-1 mt-2"></div>
+         <p>Out</p>
+      </div>
+      <h1 class="card-title text-2xl mt-24">{{ greeting }},</h1>
+      <p>{{ username }}</p>
+      <p class="mt-5 mb-1.5">{{ currentTime }}</p>
+      <div class="card-actions">
+         <button @click="timeIn" class="btn btn-circle btn-ghost w-36 h-36 mt-1 bg-clock_in_green text-white">Time In</button>
+      </div>
+      <div class="card-actions self-end mt-24">
+         <button @click="logout" class="font-bold btn btn-sm btn-ghost btn-circle w-32 ">Logout<img class="mx-2 w-4 h-4" src="~/assets/icons/exit.png"></button>
+      </div>
    </div>
 </template>
  
-<script lang="ts">
+<script>
 
    import { ref } from "vue";
 
    export default {
       setup() {
          const supabase = useSupabaseClient();
-         const currentTime = ref<string>("");
-         const greeting = ref<string>("");
-         const username = ref<string>("");
+         const currentTime = ref("");
+         const greeting = ref("");
+         const username = ref("");
 
          const updateTimeAndGreeting = () => {
             const date = new Date();
@@ -79,13 +79,43 @@
             if (error) {
                console.error("Error logging out:", error);
             } else {
-               navigateTo("/login");
+               navigateTo('/login');
             }
          };
 
-         return { currentTime, greeting, username, logout };
+         // Time-in function
+         const timeIn = async () => {
+            const { data: { user } } = await supabase.auth.getUser();  // Get the current user
+            // Check if the user exists
+            if (user) {
+               // Get the current timestamp
+               const currentTime = new Date().toISOString();
+               console.log("Current time:", currentTime);
+
+               // Update the Employees table with the current time-in timestamp and set time_in_status to true
+               const { data, error } = await supabase
+                  .from('Employees')
+                  .update({
+                     time_in: currentTime,
+                     time_in_status: true
+                  })
+                  .eq('id', user.id)
+                  .select();
+
+               // Check if the update was successful
+               if (data) {
+                  console.log('Time-in successful:', data);
+                  navigateTo('/clock-out');
+               } else if (error) {
+                  console.error('Error during time-in:', error);
+               }
+            } else {
+               console.log('User is not logged in.');
+            }
+         }
+
+         return { currentTime, greeting, username, logout, timeIn };
       }
    };
 
 </script>
- 
