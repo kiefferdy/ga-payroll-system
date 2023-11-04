@@ -12,7 +12,7 @@
          <div class="card-actions">
             <button @click="signIn" class="btn btn-xs mt-4 rounded-full text-white bg-button_green btn-ghost w-24">Login</button>
          </div>
-         <div v-if="wrong" class="error">Email or Password is incorrect</div>
+         <div v-if="wrong" class="error">Incorrect email or password</div>
       </div>
       <div class="divider divider-horizontal"></div>
       <figure><img src="~assets/images/logo.png" class="w-80"></figure>
@@ -28,6 +28,9 @@
 
 <script setup>
 
+   import { useRouter } from 'vue-router';
+
+   const router = useRouter();
    const supabase = useSupabaseClient();
 
    const email = ref("");
@@ -59,16 +62,19 @@
                   .select('time_in_status') // Checks whether the user is timed-in or not
                   .eq('id', user.id);
 
-               if(data && data.length > 0) {
+               if(error) {
+                  console.log("Error fetching data from Supabase:", error);
+                  router.push('/');
+               } else if(data && data.length > 0) {
                   const timeInStatus = `${data[0].time_in_status}`;
-                  if(timeInStatus) {
-                     navigateTo('/'); // Redirect to time-out page if user is timed-in
+                  if(timeInStatus == 'true') {
+                     router.push('/clock-out'); // Redirect to time-out page if user is timed-in
                   } else {
-                     navigateTo('/'); // Redirect to time-in page if user is timed-out
+                     router.push('/'); // Redirect to time-in page if user is timed-out
                   }
                } else {
-                  console.log("Error fetching data from Supabase:", error);
-                  navigateTo('/');
+                  console.log("No data returned from Supabase.");
+                  router.push('/');
                }
                
             } else {

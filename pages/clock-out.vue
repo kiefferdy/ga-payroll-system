@@ -19,27 +19,65 @@
 
 <script>
 
-   import { ref } from "vue";
+   import { ref } from 'vue';
+   import { useRouter } from 'vue-router';
 
    export default {
       setup() {
+         const router = useRouter();
          const supabase = useSupabaseClient();
+         
+         const checkTimeInStatus = async () => {
+
+            const { data: { user } } = await supabase.auth.getUser();  // Get the current user
+
+            if(user) {
+
+               const { data, error } = await supabase
+                  .from('Employees')
+                  .select('time_in_status') // Checks whether the user is timed-in or not
+                  .eq('id', user.id);
+
+               if(error) {
+                  console.log("Error fetching data from Supabase:", error);
+               } else if(data && data.length > 0) {
+                  const timeInStatus = `${data[0].time_in_status}`;
+                  console.log("User time-in status:", timeInStatus);
+                  if(timeInStatus == 'false') {
+                     router.push('/'); // Redirect to time-in page if user is not timed-in
+                  }
+               } else {
+                  console.log("No data returned from Supabase.");
+               }
+
+            } else {
+               console.log("Error fetching current user data.");
+            }
+         }
+
+         // Redirect user to clock-out page if user is currently timed-in
+         checkTimeInStatus();
+
          const currentTime = ref("");
          const greeting = ref("");
          const username = ref("");
 
          const updateTimeAndGreeting = () => {
             const date = new Date();
-            const hours = date.getHours();
+            let hours = date.getHours();
             const minutes = date.getMinutes();
+            const ampm = hours >= 12 ? 'PM' : 'AM';
+            hours = hours % 12;
+            hours = hours ? hours : 12; // the hour '0' should be '12'
+            const strTime = hours.toString().padStart(2, '0') + ':' + minutes.toString().padStart(2, '0') + ' ' + ampm;
 
             // Update current time
-            currentTime.value = `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")} ${hours >= 12 ? 'PM' : 'AM'}`;
+            currentTime.value = strTime;
 
             // Update greeting based on time
-            if (hours < 12) {
+            if (hours < 12 && ampm === 'AM') {
                greeting.value = "Good Morning";
-            } else if (hours < 18) {
+            } else if (hours < 6 && ampm === 'PM') {
                greeting.value = "Good Afternoon";
             } else {
                greeting.value = "Good Evening";
@@ -79,40 +117,78 @@
             if (error) {
                console.error("Error logging out:", error);
             } else {
-               navigateTo('/login');
+               router.push('/login');
             }
          };
 
          // Time-out function
          const timeOut = async () => {
             const { data: { user } } = await supabase.auth.getUser();  // Get the current user
+
             // Check if the user exists
             if (user) {
-               // Get the current timestamp
-               const currTime = new Date().toISOString();
-               console.log("Current time:", currentTime);
+               // Get the current timestamp for time-out
+               const currentTimeOut = new Date().toISOString();
 
-               // Update the Employees table with the current time-out timestamp and set time_in_status to false
-               const { data, error } = await supabase
+               // Retrieve the user's current time-in status and time-in timestamp
+               const { data: employeeData, error: employeeError } = await supabase
                   .from('Employees')
-                  .update({
-                     time_out: currTime,
-                     time_in_status: false
-                  })
+                  .select('time_in, time_in_status')
                   .eq('id', user.id)
-                  .select();
+                  .single();
 
-               // Check if the update was successful
-               if (data) {
-                  console.log('Time-out successful:', data);
-                  navigateTo('/');
-               } else if (error) {
-                  console.error('Error during time-out:', error);
+               if (employeeError) {
+                  console.error("Error fetching employee data:", employeeError);
+                  return;
                }
+
+               // Check if employee is currently timed-in
+               if (employeeData && employeeData.time_in_status) {
+                  const timeIn = new Date(employeeData.time_in);
+                  const timeOut = new Date(currentTimeOut);
+
+                  // Calculate the duration in minutes
+                  const durationMinutes = Math.round((timeOut - timeIn) / 60000);
+
+                  // Record the time-in and time-out in the TimeSheet table
+                  const { data: timeSheetData, error: timeSheetError } = await supabase
+                     .from('TimeSheet')
+                     .insert({
+                        user_id: user.id,
+                        time_in: employeeData.time_in,
+                        time_out: currentTimeOut,
+                        duration: durationMinutes
+                     });
+
+                  if (timeSheetError) {
+                     console.error("Error recording time-out to TimeSheet:", timeSheetError);
+                     return;
+                  }
+
+                  // Update the Employees table to set time_in_status to false
+                  const { error: updateTimeError } = await supabase
+                     .from('Employees')
+                     .update({
+                        time_in_status: false,
+                        time_out: currentTimeOut
+                     })
+                     .eq('id', user.id);
+
+                  if (updateTimeError) {
+                     console.error("Error updating employee time-in status:", updateTimeError);
+                  } else {
+                     console.log('Time-out successful:', currentTimeOut);
+                     router.push('/');
+                  }
+
+               } else {
+                  console.log("Cannot time-out because the user is not timed-in!");
+               }
+
             } else {
                console.log('User is not logged in.');
             }
-         }
+         };
 
          return { currentTime, greeting, username, logout, timeOut };
       }
