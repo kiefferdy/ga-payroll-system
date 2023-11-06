@@ -21,7 +21,7 @@
          <div>
             <li class="active bg-primary_white rounded-r-[1rem] py-2 items-center text-black"><NuxtLink to="/employees">Employees</NuxtLink></li>
             <li class="py-2 items-center"><NuxtLink>Records</NuxtLink></li>
-            <li class="py-2 items-center"><NuxtLink>Settings</NuxtLink></li>         
+            <li class="py-2 items-center"><NuxtLink to="/settings">Settings</NuxtLink></li>         
          </div>
          <div class="self-end mb-1">
             <button class="font-bold btn btn-sm btn-ghost btn-circle w-28">Logout<img class="mx-2 w-4 h-4" src="~/assets/icons/exit_white.png"></button>
