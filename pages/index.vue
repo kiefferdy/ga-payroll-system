@@ -9,7 +9,7 @@
       <p>{{ username }}</p>
       <p class="mt-5 mb-1.5">{{ currentTime }}</p>
       <div class="card-actions">
-         <button @click="timeIn" class="btn btn-circle btn-ghost w-36 h-36 mt-1 bg-clock_in_green text-white">Time In</button>
+         <button @click="initializeTimeIn" class="btn btn-circle btn-ghost w-36 h-36 mt-1 bg-clock_in_green text-white">Time In</button>
       </div>
       <div class="card-actions self-end mt-24">
          <button @click="logout" class="font-bold btn btn-sm btn-ghost btn-circle w-32 ">Logout<img class="mx-2 w-4 h-4" src="~/assets/icons/exit.png"></button>
@@ -121,7 +121,35 @@
             }
          };
 
-         // Time-in function
+         // Initialize time-in function (runs when user clicks time-in button)
+         const initializeTimeIn = async () => {
+            const { data: { user } } = await supabase.auth.getUser();  // Get the current user
+
+            if (user) {
+               // Check if the user requires OTP or not
+               const { data, error } = await supabase
+                  .from('Employees')
+                  .select('requires_otp')
+                  .eq('id', user.id);
+
+               if (error) {
+                  console.log("Error fetching data from Supabase:", error);
+               } else if (data && data.length > 0) {
+                  const requiresOtp = `${data[0].requires_otp}`;
+                  if (requiresOtp == 'true') {
+                     timeInWithOTP();
+                  } else {
+                     timeIn();
+                  }
+               } else {
+                  console.log("No data returned from Supabase.");
+               }
+            } else {
+               console.log("User is not logged in.");
+            }
+         }
+
+         // Time-in function without OTP sending
          const timeIn = async () => {
             const { data: { user } } = await supabase.auth.getUser();  // Get the current user
 
@@ -129,12 +157,12 @@
             if (user) {
                // Get the current timestamp
                const currentTime = new Date().toISOString();
-               console.log("Current time:", currentTime);
+               console.log("Time-in time:", currentTime);
 
                // Check if employee is already timed-in
                const { data, error } = await supabase
                   .from('Employees')
-                  .select('time_in_status') // Checks whether the user is timed-in or not
+                  .select('time_in_status') // Whether the user is timed-in or not
                   .eq('id', user.id);
 
                if (error) {
@@ -173,7 +201,62 @@
             }
          }
 
-         return { currentTime, greeting, username, logout, timeIn };
+         // Time-in function with OTP sending
+         const timeInWithOTP = async () => {
+            const { data: { user } } = await supabase.auth.getUser();  // Get the current user
+
+            // Check if the user exists
+            if (user) {
+               // Get the current timestamp
+               const currentTime = new Date().toISOString();
+               console.log("Attempting to send OTP at time:", currentTime);
+
+               // Check if employee is already timed-in
+               const { data, error } = await supabase
+                  .from('Employees')
+                  .select('time_in_status') // Checks whether the user is timed-in or not
+                  .eq('id', user.id);
+
+               if (error) {
+                  console.log("Error fetching data from Supabase:", error);
+                  return;
+               } else if (data && data.length > 0) {
+                  const timeInStatus = data[0].time_in_status;
+                  if (!timeInStatus) {
+                     // If the user is not timed-in, send an OTP before proceeding
+                     try {
+                        // Replace 'send-otp-endpoint' with the correct URL/path to your sendOtp function
+                        const otpResponse = await fetch('/api/send-otp', {
+                           method: 'POST',
+                           headers: {
+                           'Content-Type': 'application/json'
+                           },
+                           // No need to send phone number if it's fixed and handled in the backend
+                        });
+                        const otpResult = await otpResponse.json();
+                        
+                        if (otpResult.success) {
+                           console.log('OTP sent successfully:', otpResult.verificationSid);
+                           // Redirect the user to the OTP verification page
+                           router.push('/verify-otp');
+                        } else {
+                           console.error('Error sending OTP:', otpResult.error);
+                        }
+                     } catch (otpError) {
+                        console.error('Failed to send OTP:', otpError);
+                     }
+                  } else {
+                     console.log("Cannot time-in because the user is already timed-in!");
+                  }
+               } else {
+                  console.log("No data returned from Supabase.");
+               }
+            } else {
+               console.log('User is not logged in.');
+            }
+         };
+
+         return { currentTime, greeting, username, initializeTimeIn, logout };
       }
    };
 
