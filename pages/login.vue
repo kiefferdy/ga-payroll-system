@@ -4,10 +4,10 @@
          <h1 class="card-title text-black">Account Login</h1>
 
          <label class="label-text text-black mt-4">Email</label>
-         <input v-model="email" type="text" class="input-s border-2 border-primary_green bg-primary_white rounded w-72" required>
+         <input v-model="email" type="text" class="input-s border-2 border-primary_green bg-primary_white rounded w-72 text-black" required>
          
          <label class="label-text text-black mt-4">Password</label>
-         <input v-model="password" type="password" class="input-s border-2 border-primary_green bg-primary_white rounded w-72" required>
+         <input v-model="password" type="password" class="input-s border-2 border-primary_green bg-primary_white rounded w-72 text-black" required>
          
          <div class="card-actions">
             <button @click="signIn" class="btn btn-xs mt-4 rounded-full text-white bg-button_green btn-ghost w-24">Login</button>
