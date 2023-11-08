@@ -134,37 +134,37 @@
          </div>
          <div class="card card-side justify-between mx-10">
             <div>
-               <div class="text-sm card card-side w-72 justify-between">
-                  <p>Pay per Hr</p>
-                  <p>Pay per Min</p>               
+               <div class="text-sm card card-side justify-between bg-off_white">
+                  <p class="pe-36">Pay per Hr</p>
+                  <p class="pe-36">Pay per Min</p>               
                </div>
                
             </div>
-            <div>
-               <table class="text-left text-sm">
+            <div class="card px-5 py-2 bg-off_white">
+               <table class="text-left text-xs">
                   <tbody>
                      <tr>
-                        <th>Weekly Total</th>
+                        <th class="font-normal">Weekly Total</th>
                         <td class="w-16 border-b-2 border-dark_green"></td>
                      </tr>
                      <tr>
-                        <th>Friday</th>
+                        <th class="font-normal">Friday</th>
                         <td class="w-16 border-b-2 border-dark_green"></td>
                      </tr>
                      <tr>
-                        <th>Bale</th>
+                        <th class="font-normal">Bale</th>
                         <td class="w-16 border-b-2 border-dark_green"></td>
                      </tr>
                      <tr>
-                        <th>Sat Advance</th>
+                        <th class="font-normal">Sat Advance</th>
                         <td class="w-16 border-b-2 border-dark_green"></td>
                      </tr>
                      <tr>
-                        <th>Deduction</th>
+                        <th class="font-normal">Deduction</th>
                         <td class="w-16 border-b-2 border-dark_green"></td>
                      </tr>
                      <tr class="text-base">
-                        <th>Total Balance</th>
+                        <th class="pe-10 pt-2">Total Balance</th>
                         <td class="w-16 border-b-2 border-dark_green ms-20"></td>
                      </tr>
                   </tbody>
