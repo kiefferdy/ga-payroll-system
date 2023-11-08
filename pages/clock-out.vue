@@ -55,7 +55,7 @@
             }
          }
 
-         // Redirect user to clock-out page if user is currently timed-in
+         // Redirect user to time-in page if user is currently timed-out
          checkTimeInStatus();
 
          const currentTime = ref("");

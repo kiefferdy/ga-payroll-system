@@ -4,10 +4,11 @@ import Twilio from 'twilio';
 const accountSid = process.env.NUXT_TWILIO_ACCOUNT_SID;
 const authToken = process.env.NUXT_TWILIO_AUTH_TOKEN;
 const serviceSid = process.env.NUXT_TWILIO_VERIFY_SERVICE_SID;
+const email = process.env.NUXT_OTP_EMAIL;
 const phoneNumber = process.env.NUXT_OTP_PHONE_NUMBER;
 
 // Verify that the required environment variables are set
-if (!accountSid || !authToken || !serviceSid || !phoneNumber) {
+if (!accountSid || !authToken || !serviceSid || !phoneNumber || !email) {
     throw new Error('Missing required environment variables for Twilio.');
 }
 
@@ -27,7 +28,7 @@ export default defineEventHandler(async (event) => {
         // Call Twilio to verify the OTP
         const verificationCheck = await client.verify.v2.services(serviceSid)
             .verificationChecks
-            .create({ code: otpCode, to: phoneNumber });
+            .create({ code: otpCode, to: email });
 
         // Check if verification was successful
         if (verificationCheck.status === 'approved') {

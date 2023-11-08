@@ -18,10 +18,20 @@
                v-model="otp4" @input="event => watchOtpInput(event)" ref="otp4Element"/>
       </div>
       <div class="card-actions">
-         <button class="btn btn-sm btn-circle w-24 mt-6 bg-button_green btn-ghost text-white" @click="submitOTP">Submit</button>
+         <button class="btn btn-sm btn-circle w-24 mt-6 bg-button_green btn-ghost text-white" @click="submitOTP">
+            Submit
+         </button>
+      </div>
+      <div class="card-actions">
+         <!-- Resend OTP button with cooldown counter -->
+         <button class="btn btn-sm btn-circle w-24 mt-6 bg-dark_gray btn-ghost text-white" :disabled="cooldown > 0" @click="resendOtp">
+            <span v-if="cooldown" class="text-dark_gray">{{ cooldown }}</span>
+            <span v-else>Resend</span>
+         </button>
       </div>
    </div>
 </template>
+
 
 <script setup>
 
@@ -41,6 +51,10 @@
    const otp2Element = ref(null);
    const otp3Element = ref(null);
    const otp4Element = ref(null);
+
+   // Cooldown for resend OTP
+   const cooldown = ref(0);
+   let intervalId = null;
 
    const router = useRouter();
    const supabase = useSupabaseClient();
@@ -122,5 +136,117 @@
          }
       }
    };
+
+   // Time-in function with OTP sending
+   const resendOtp = async () => {
+
+      if (cooldown.value > 0) {
+         console.log('Please wait before resending OTP.');
+         return;
+      }
+      const { data: { user } } = await supabase.auth.getUser();  // Get the current user
+
+      // Check if the user exists
+      if (user) {
+         // Get the current timestamp
+         const currentTime = new Date().toISOString();
+         console.log("Attempting to send OTP at time:", currentTime);
+
+         // Check if employee is already timed-in
+         const { data, error } = await supabase
+            .from('Employees')
+            .select('time_in_status') // Checks whether the user is timed-in or not
+            .eq('id', user.id);
+
+         if (error) {
+            console.log("Error fetching data from Supabase:", error);
+            return;
+         } else if (data && data.length > 0) {
+            const timeInStatus = data[0].time_in_status;
+            if (!timeInStatus) {
+               // If the user is not timed-in, send an OTP before proceeding
+               try {
+                  // Replace 'send-otp-endpoint' with the correct URL/path to your sendOtp function
+                  const otpResponse = await fetch('/api/send-otp', {
+                     method: 'POST',
+                     headers: {
+                     'Content-Type': 'application/json'
+                     },
+                     // No need to send phone number if it's fixed and handled in the backend
+                  });
+                  const otpResult = await otpResponse.json();
+                  
+                  if (otpResult.success) {
+                     console.log('OTP sent successfully:', otpResult.verificationSid);
+                     // Redirect the user to the OTP verification page
+                     router.push('/verify-otp');
+                  } else {
+                     console.error('Error sending OTP:', otpResult.error);
+                  }
+               } catch (otpError) {
+                  console.error('Failed to send OTP:', otpError);
+               }
+            } else {
+               console.log("Cannot time-in because the user is already timed-in!");
+            }
+         } else {
+            console.log("No data returned from Supabase.");
+         }
+      } else {
+         console.log('User is not logged in.');
+      }
+
+      // Start cooldown after sending OTP
+      startCooldown();
+   };
+
+   // Function to initiate cooldown
+   const startCooldown = () => {
+      cooldown.value = 20;
+      intervalId = setInterval(() => {
+         if (cooldown.value > 0) {
+            cooldown.value--;
+         } else {
+            clearInterval(intervalId);
+         }
+      }, 1000);
+   };
+
+   // Watch for cooldown to be 0 to enable the button
+   watch(cooldown, (newValue) => {
+      if (newValue === 0) {
+         clearInterval(intervalId);
+      }
+   });
+
+   const checkTimeInStatus = async () => {
+      const { data: { user } } = await supabase.auth.getUser();  // Get the current user
+
+      if(user) {
+
+         const { data, error } = await supabase
+            .from('Employees')
+            .select('time_in_status') // Checks whether the user is timed-in or not
+            .eq('id', user.id);
+
+         if(error) {
+            console.log("Error fetching data from Supabase:", error);
+         } else if(data && data.length > 0) {
+            const timeInStatus = `${data[0].time_in_status}`;
+            console.log("User time-in status:", timeInStatus);
+            if(timeInStatus == 'true') {
+               router.push('/clock-out'); // Redirect to clock-out page if user is timed-in
+            }
+         } else {
+            console.log("No data returned from Supabase.");
+         }
+
+      } else {
+         console.log("Error fetching current user data.");
+      }
+   }
+
+   // Redirect user to clock-out page if user is currently timed-in
+   checkTimeInStatus();
 
 </script>
