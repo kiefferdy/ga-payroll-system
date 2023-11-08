@@ -1,7 +1,7 @@
 <template>
       <div class="card card-side h-[37rem] w-[65rem] bg-dark_green text-black">
       <div class="card h-[37rem] w-[55rem] bg-primary_white rounded rounded-[1rem] rounded-br-[1rem]">
-         <div class="card card-side justify-between mx-10 mt-5">
+         <div class="card card-side justify-between mx-10 mt-3">
             <div class="card card-side">
                <p class="pe-2 mt-1">Employee:</p>
                <div class="dropdown dropdown-hover w-56 border-button_green border-2 rounded-md">
@@ -25,7 +25,7 @@
                </div>
             </div>
          </div>
-         <div class=" mx-10 my-2">
+         <div class="card mx-5 my-2 bg-off_white p-2 px-5">
             <table class="table text-xs">
                <thead class="">
                   <tr>
@@ -132,9 +132,9 @@
                </tbody>
             </table>
          </div>
-         <div class="card card-side justify-between mx-10">
+         <div class="card card-side justify-between mx-5">
             <div>
-               <div class="text-sm card card-side justify-between bg-off_white">
+               <div class="text-sm card card-side justify-between bg-off_white px-5 py-2">
                   <p class="pe-36">Pay per Hr</p>
                   <p class="pe-36">Pay per Min</p>               
                </div>
