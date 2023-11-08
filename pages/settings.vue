@@ -3,20 +3,24 @@
        <div class="card h-[37rem] w-[55rem] bg-primary_white rounded rounded-l-[1rem] rounded-tr-[0rem] rounded-br-[1rem]">
           <div class="card card-side  mx-10 mt-5 justify-between">
           </div>
-          <div>
-             <label for="company-email">Company Email: </label>
-             <input id="company-email" type="text" placeholder="Email" class="input input-sm bg-primary_white border-search_stroke_gray rounded rounded-l-full w-60">
+          <div class="m-20 mt-10">
+             <label for="company-email" class="mt-4 ml-4">Company Email: </label>
              <br>
-             <label for="company-pw">Company Password: </label>
-             <input id="company-pw" type="text" placeholder="Password" class="input input-sm bg-primary_white border-search_stroke_gray rounded rounded-l-full w-60">
+             <input id="company-email" type="text" placeholder="Email" class="input input-sm bg-primary_white border-2 border-search_stroke_gray text-black rounded w-60 ml-4 mb-4">
              <br>
-             <button class="btn btn-sm bg-dark_green btn-ghost text-white rounded-full capitalize">Save</button>
+             <label class="mt-4 ml-4">Company Password: </label>
+             <br>
+             <input v-if="showPassword" type="text" placeholder="Password" class="input input-sm bg-primary_white border-2 border-search_stroke_gray text-black rounded w-60 ml-4" v-model="password" />
+             <input v-else type="password" placeholder="Password" class="input input-sm bg-primary_white border-2 border-search_stroke_gray text-black rounded w-60 ml-4" v-model="password">
+             <input type="checkbox" @click="toggleShow" class="ml-4" />Show Password
+             <br>
+             <button class="btn btn-sm bg-dark_green btn-ghost text-white rounded-full capitalize mt-4 ml-4">Save</button>
           </div>
        </div>
        <ul class="menu w-[10rem] p-0 font-bold text-white justify-between">
           <div>
              <li class="py-2 items-center"><NuxtLink to="/employees">Employees</NuxtLink></li>
-             <li class="py-2 items-center"><NuxtLink>Records</NuxtLink></li>
+             <li class="py-2 items-center"><NuxtLink to="/records">Records</NuxtLink></li>
              <li class="active bg-primary_white rounded-r-[1rem] py-2 items-center text-black"><NuxtLink to="/settings">Settings</NuxtLink></li>         
           </div>
           <div class="self-end mb-1">
@@ -24,4 +28,25 @@
           </div>
        </ul>
     </div>
- </template>
+</template>
+
+<script>
+export default {
+  data() {
+    return {
+      showPassword: false,
+      password: null
+    };
+  },
+  computed: {
+    buttonLabel() {
+      return (this.showPassword) ? "Hide" : "Show";
+    }
+  },
+  methods: {
+    toggleShow() {
+      this.showPassword = !this.showPassword;
+    }
+  }
+};
+</script>
