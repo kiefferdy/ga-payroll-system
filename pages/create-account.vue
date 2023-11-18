@@ -23,9 +23,12 @@
          <label class="label-text text-black mt-4 font-bold">Confirm Password<br></label>
          <input type="password" class="input input-sm border-dark_green bg-primary_white rounded w-full">
       </div>
-      <div class="self-end mt-5">
-         <button class="btn btn-ghost rounded-full btn-sm bg-dark_gray text-white mr-1 px-5">Cancel</button>
-         <button class="btn btn-ghost rounded-full btn-sm bg-button_green text-white m-1">Continue</button>
+      <div class="mt-5">
+         <input type="checkbox"> Needs OTP to Login?
+      </div>
+      <div class="self-end">
+         <button class="btn btn-ghost rounded-full btn-sm bg-dark_gray text-white ml-10 mr-1 px-5">Cancel</button>
+         <button class="btn btn-ghost rounded-full btn-sm bg-button_green text-white m-1">Conitnue</button>
       </div>
    </div>
 </template>
