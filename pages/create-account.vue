@@ -4,24 +4,24 @@
       <div class="card card-side justify-between">
          <div>
             <label class="label-text text-black mt-4 font-bold">First Name<br></label>
-            <input type="text" class="input input-sm border-dark_green bg-primary_white rounded w-64">
+            <input type="text" class="input input-sm border-dark_green bg-primary_white rounded w-64" required>
          </div>
          <div>
             <label class="label-text text-black mt-4 font-bold">Last Name<br></label>
-            <input type="text" class="input input-sm border-dark_green bg-primary_white rounded w-64">
+            <input type="text" class="input input-sm border-dark_green bg-primary_white rounded w-64" required>
          </div>
       </div>
       <div class="mt-5">
          <label class="label-text text-black mt-4 font-bold">Email<br></label>
-         <input type="email" class="input input-sm border-dark_green bg-primary_white rounded w-full">
+         <input type="email" class="input input-sm border-dark_green bg-primary_white rounded w-full" required>
       </div>
       <div class="mt-5">
          <label class="label-text text-black mt-4 font-bold">Password<br></label>
-         <input type="text" class="input input-sm border-dark_green bg-primary_white rounded w-full">
+         <input type="text" class="input input-sm border-dark_green bg-primary_white rounded w-full" required>
       </div>
       <div class="mt-5">
          <label class="label-text text-black mt-4 font-bold">Confirm Password<br></label>
-         <input type="password" class="input input-sm border-dark_green bg-primary_white rounded w-full">
+         <input type="password" class="input input-sm border-dark_green bg-primary_white rounded w-full" required>
       </div>
       <div class="mt-5">
          <input type="checkbox" class="text-black"> Needs OTP to Login?
