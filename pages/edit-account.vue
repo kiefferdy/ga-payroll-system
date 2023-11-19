@@ -1,6 +1,6 @@
 <template> 
     <div class="card text-black flex justify-center h-[30rem] w-[35rem]">
-       <h1 class="card-title mb-5">Edit Account</h1>
+       <h1 class="card-title mb-5">Edit Account of </h1>
        <div class="card card-side justify-between">
           <div> 
              <label class="label-text text-black mt-4 font-bold">First Name<br></label>
@@ -44,5 +44,6 @@
  </style>
  
  <script>
- /*TODO: Make placeholders user info to be edited*/
+ /* TODO: Make placeholders be previous user info 
+    and make header to mention employee's previous first and last name*/
  </script>
