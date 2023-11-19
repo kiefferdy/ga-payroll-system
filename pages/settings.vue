@@ -3,7 +3,7 @@
        <div class="card h-[37rem] w-[55rem] bg-primary_white rounded rounded-l-[1rem] rounded-tr-[0rem] rounded-br-[1rem]">
           <div class="card card-side  mx-10 mt-5 justify-between">
           </div>
-          <div class="m-20 mt-10">
+          <div class="mt-10 ml-20">
              <label for="company-email" class="mt-4 ml-4">Company Email: </label>
              <br>
              <input id="company-email" type="text" placeholder="Email" class="input input-sm bg-primary_white border-2 border-search_stroke_gray text-black rounded w-60 ml-4 mb-4">
