@@ -10,11 +10,11 @@
              <br>
              <label class="mt-4 ml-4">Company Password: </label>
              <br>
-             <input v-if="showPassword" type="text" placeholder="Password" class="input input-sm bg-primary_white border-2 border-search_stroke_gray text-black rounded w-60 ml-4" v-model="password" />
-             <input v-else type="password" placeholder="Password" class="input input-sm bg-primary_white border-2 border-search_stroke_gray text-black rounded w-60 ml-4" v-model="password">
-             <input type="checkbox" @click="toggleShow" class="ml-4" />Show Password
+             <input :type="passwordFieldType" type="text" placeholder="Password" class="input input-sm bg-primary_white border-2 border-search_stroke_gray text-black rounded w-60 ml-4" v-model="password" />
              <br>
-             <button class="btn btn-sm bg-dark_green btn-ghost text-white rounded-full capitalize mt-4 ml-4">Save</button>
+             <input type="checkbox" @click="hidePassword = !hidePassword" class="ml-4 mt-3" />Show Password
+             <br>
+             <button class="btn btn-sm bg-dark_green btn-ghost text-white rounded-full capitalize w-60 mt-4 ml-4">Save Changes</button>
           </div>
        </div>
        <ul class="menu w-[10rem] p-0 font-bold text-white justify-between">
@@ -30,23 +30,9 @@
     </div>
 </template>
 
-<script>
-export default {
-  data() {
-    return {
-      showPassword: false,
-      password: null
-    };
-  },
-  computed: {
-    buttonLabel() {
-      return (this.showPassword) ? "Hide" : "Show";
-    }
-  },
-  methods: {
-    toggleShow() {
-      this.showPassword = !this.showPassword;
-    }
-  }
-};
+<script setup>
+  const hidePassword = ref(true);
+  const password = ref("");
+
+  const passwordFieldType = computed(() => hidePassword.value ? "password" : "text");
 </script>
