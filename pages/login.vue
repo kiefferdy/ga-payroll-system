@@ -7,10 +7,11 @@
          <input v-model="email" type="text" class="input-s border-2 border-primary_green bg-primary_white rounded w-72 text-black" required>
          
          <label class="label-text text-black mt-4">Password</label>
-         <input v-model="password" type="password" class="input-s border-2 border-primary_green bg-primary_white rounded w-72 text-black" required>
+         <input :type="passwordFieldType" v-model="password" class="input-s border-2 border-primary_green bg-primary_white rounded w-72 text-black" required>
          
+         <div class="text-black"><input @click="hidePassword = !hidePassword" type="checkbox"> Show Password</div>
          <div class="card-actions">
-            <button @click="signIn" class="btn btn-xs mt-4 rounded-full text-white bg-button_green btn-ghost w-24">Login</button>
+            <button @click="signIn" class="btn btn-xs mt-3 rounded-full text-white bg-button_green btn-ghost w-24">Login</button>
          </div>
          <div v-if="wrong" class="error">Incorrect email or password</div>
       </div>
@@ -34,8 +35,11 @@
    const supabase = useSupabaseClient();
 
    const email = ref("");
+   const hidePassword = ref(true);
    const password = ref("");
    const wrong = ref(false);
+
+   const passwordFieldType = computed(() => hidePassword.value ? "password" : "text");
 
    async function signIn() {
 
