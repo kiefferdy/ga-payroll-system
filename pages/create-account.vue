@@ -33,6 +33,7 @@
       <div v-if="wrong" class="mt-2 self-center error">Email is Invalid</div>
       <div v-if="wrong" class="mt-2 self-center error">Passwords do not match</div>
       <div v-if="wrong" class="mt-2 self-center error">Please fill all fields before proceeding</div>
+      <div v-if="wrong" class="mt-2 self-center error">Email is already taken</div>
    </div>
 </template>
 
