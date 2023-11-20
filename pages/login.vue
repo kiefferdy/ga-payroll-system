@@ -4,15 +4,16 @@
          <h1 class="card-title text-black">Account Login</h1>
 
          <label class="label-text text-black mt-4">Email</label>
-         <input v-model="email" type="text" class="input-s border-2 text-black border-primary_green bg-primary_white rounded w-72" required>
+         <input v-model="email" type="text" class="input-s border-2 border-primary_green bg-primary_white rounded w-72 text-black" required>
          
          <label class="label-text text-black mt-4">Password</label>
-         <input v-model="password" type="password" class="input-s border-2 text-black border-primary_green bg-primary_white rounded w-72" required>
+         <input :type="passwordFieldType" v-model="password" class="input-s border-2 border-primary_green bg-primary_white rounded w-72 text-black" required>
          
+         <div class="text-black"><input @click="hidePassword = !hidePassword" type="checkbox"> Show Password</div>
          <div class="card-actions">
-            <button @click="signIn" class="btn btn-xs mt-4 rounded-full text-white bg-button_green btn-ghost w-24">Login</button>
+            <button @click="signIn" class="btn btn-xs mt-3 rounded-full text-white bg-button_green btn-ghost w-24">Login</button>
          </div>
-         <div v-if="wrong" class="error">Email or Passowrd is Incorrect</div>
+         <div v-if="wrong" class="error">Incorrect email or password</div>
       </div>
       <div class="divider divider-horizontal"></div>
       <figure><img src="~assets/images/logo.png" class="w-80"></figure>
@@ -21,41 +22,74 @@
 </template>
 
 <style scoped>
-.error {
-  color: red;
-}
+   .error {
+   color: red;
+   }
 </style>
 
-<script setup lang="ts">
+<script setup>
 
-const supabase = useSupabaseClient();
+   import { useRouter } from 'vue-router';
 
-const email = ref("");
-const password = ref("");
-const wrong = ref(false);
-async function signIn() {
-try {
-const { data, error } = await supabase.auth.signInWithPassword({
-email: email.value,
-password: password.value,
-}
-);
+   const router = useRouter();
+   const supabase = useSupabaseClient();
 
-if (error) {
-console.error("Sign in error:", error);
-wrong.value = true
-} else {
-wrong.value = false
-console.log("Sign in successful:", data);
-navigateTo('/Profile')
-// Do something with the authenticated user data if needed.
-}
+   const email = ref("");
+   const hidePassword = ref(true);
+   const password = ref("");
+   const wrong = ref(false);
 
-} catch (error) {
-wrong.value = true
-console.error("Error signing in:", error);
-}
-}
-// TODO:
-// Async search database for existing user
+   const passwordFieldType = computed(() => hidePassword.value ? "password" : "text");
+
+   async function signIn() {
+
+      try {
+         const { error } = await supabase.auth.signInWithPassword({
+            email: email.value,
+            password: password.value,
+         });
+
+         if (error) {
+            console.error("Sign in error:", error);
+            wrong.value = true;
+
+         } else {
+            wrong.value = false;
+
+            const { data: { user } } = await supabase.auth.getUser();  // Get the current user
+            console.log("Retrieved user:", user);
+
+            if(user) {
+
+               const { data, error } = await supabase
+                  .from('Employees')
+                  .select('time_in_status') // Checks whether the user is timed-in or not
+                  .eq('id', user.id);
+
+               if(error) {
+                  console.log("Error fetching data from Supabase:", error);
+                  router.push('/');
+               } else if(data && data.length > 0) {
+                  const timeInStatus = `${data[0].time_in_status}`;
+                  if(timeInStatus == 'true') {
+                     router.push('/clock-out'); // Redirect to time-out page if user is timed-in
+                  } else {
+                     router.push('/'); // Redirect to time-in page if user is timed-out
+                  }
+               } else {
+                  console.log("No data returned from Supabase.");
+                  router.push('/');
+               }
+               
+            } else {
+               console.log("Error fetching current user data.")
+            }
+         }
+
+      } catch (error) {
+         wrong.value = true
+         console.error("Error signing in:", error);
+      }
+   }
+
 </script>
