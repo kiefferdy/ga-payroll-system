@@ -27,7 +27,9 @@
           <input type="checkbox" class="text-black"> Needs OTP to Login?
        </div>
        <div class="self-end">
-          <NuxtLink to="/employees"><button class="btn btn-ghost rounded-full btn-sm bg-dark_gray text-white ml-10 mr-1 px-5">Cancel</button></NuxtLink>
+          <NuxtLink to="/employees">
+            <button class="btn btn-ghost rounded-full btn-sm bg-dark_gray text-white ml-10 mr-1 px-5">Cancel</button>
+          </NuxtLink>
           <button class="btn btn-ghost rounded-full btn-sm bg-button_green text-white m-1">Conitnue</button>
        </div>
        <div v-if="wrong" class="mt-2 self-center error">Email is Invalid</div>
@@ -43,7 +45,7 @@
  }
  </style>
  
- <script>
+ <script setup>
 
 
  /* TODO: Make placeholders be previous user info 

@@ -45,7 +45,8 @@
 }
 </style>
 
-<script>
+<script setup>
 
-
+/* TODO: Make placeholders be previous user info 
+    and make header to mention employee's previous first and last name*/
 </script>

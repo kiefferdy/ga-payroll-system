@@ -14,8 +14,10 @@
             <p class="text-xs">Last updated: 9:00 PM</p>
          </div>
          <div class="card card-side items-center">
-            <button class="btn btn-info btn-sm me-2"><img src="~/assets/icons/edit.png"  class="w-4"></button>
-            <button class="btn btn-error btn-sm"><img src="~/assets/icons/delete.png"  class="w-4"></button>
+            <NuxtLink to="/edit-account">
+               <button class="btn btn-info btn-sm me-2"><img src="~/assets/icons/edit.png" class="w-4"></button>
+            </NuxtLink>
+               <button class="btn btn-error btn-sm"><img src="~/assets/icons/delete.png" class="w-4"></button>
          </div>         
       </div>
 
