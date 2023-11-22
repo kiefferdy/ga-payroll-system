@@ -10,10 +10,7 @@
                <NuxtLink to="/create-account"><button class="btn btn-sm bg-dark_green btn-ghost text-white rounded-full capitalize"><img src="~/assets/icons/add.png" class="w-4">Add Account</button></NuxtLink>
             </div> 
          </div>
-         <div>
-            <ProfileCard/>
-            <ProfileCard/>
-            <ProfileCard/>
+         <div v-for="e in employees">
             <ProfileCard/>
          </div>
       </div>
@@ -29,3 +26,7 @@
       </ul>
    </div>
 </template>
+
+<script setup>
+   
+</script>

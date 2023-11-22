@@ -32,10 +32,10 @@
          </NuxtLink>
          <button class="btn btn-ghost rounded-full btn-sm bg-button_green text-white m-1">Conitnue</button>
       </div>
-      <div v-if="wrong" class="mt-2 self-center error">Email is Invalid</div>
-      <div v-if="wrong" class="mt-2 self-center error">Passwords do not match</div>
-      <div v-if="wrong" class="mt-2 self-center error">Please fill all fields before proceeding</div>
-      <div v-if="wrong" class="mt-2 self-center error">Email is already taken</div>
+      <div v-if="invalidEmail" class="mt-2 self-center error">Email is Invalid</div>
+      <div v-if="wrongPw" class="mt-2 self-center error">Passwords do not match</div>
+      <div v-if="incomplete" class="mt-2 self-center error">Please fill all fields before proceeding</div>
+      <div v-if="takenEmail" class="mt-2 self-center error">Email is already taken</div>
    </div>
 </template>
 
