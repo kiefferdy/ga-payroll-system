@@ -141,23 +141,39 @@
             const { data: { user } } = await supabase.auth.getUser();  // Get the current user
 
             if (user) {
-               // Check if the user requires OTP or not
-               const { data, error } = await supabase
-                  .from('Employees')
-                  .select('requires_otp')
-                  .eq('id', user.id);
+               // Check the global OTP enable setting first
+               const { data: globalSettings, error: settingsError } = await supabase
+                  .from('Settings')
+                  .select('otp_enable')
+                  .single();
 
-               if (error) {
-                  console.log("Error fetching data from Supabase:", error);
-               } else if (data && data.length > 0) {
-                  const requiresOtp = `${data[0].requires_otp}`;
-                  if (requiresOtp == 'true') {
-                     timeInWithOTP();
+               if (settingsError) {
+                  console.error("Error fetching global settings:", settingsError);
+                  return;
+               }
+
+               if (globalSettings.otp_enable) {
+                  // If OTP feature is globally enabled
+                  const { data, error } = await supabase
+                     .from('Employees')
+                     .select('requires_otp')
+                     .eq('id', user.id);
+
+                  if (error) {
+                     console.log("Error fetching data from Supabase:", error);
+                  } else if (data && data.length > 0) {
+                     const requiresOtp = `${data[0].requires_otp}`;
+                     if (requiresOtp == 'true') {
+                        timeInWithOTP(); // Call OTP version if user requires OTP
+                     } else {
+                        timeIn(); // Call regular version otherwise
+                     }
                   } else {
-                     timeIn();
+                     console.log("No data returned from Supabase.");
                   }
                } else {
-                  console.log("No data returned from Supabase.");
+                  console.log(globalSettings.otp_enable);
+                  timeIn(); // Call regular version if OTP is globally disabled
                }
             } else {
                console.log("User is not logged in.");
@@ -250,13 +266,11 @@
                   if (!timeInStatus) {
                      // If the user is not timed-in, send an OTP before proceeding
                      try {
-                        // Replace 'send-otp-endpoint' with the correct URL/path to your sendOtp function
                         const otpResponse = await fetch('/api/send-otp', {
                            method: 'POST',
                            headers: {
                            'Content-Type': 'application/json'
                            },
-                           // No need to send phone number if it's fixed and handled in the backend
                         });
                         const otpResult = await otpResponse.json();
                         
