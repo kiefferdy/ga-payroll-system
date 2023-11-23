@@ -11,10 +11,9 @@
             </div> 
          </div>
          <div>
-            <ProfileCard/>
-            <ProfileCard/>
-            <ProfileCard/>
-            <ProfileCard/>
+            <div v-for="p in Employees">
+               <ProfileCard :Employees="p"/>
+            </div>
          </div>
       </div>
       <ul class="menu w-[10rem] p-0 font-bold text-white justify-between">
@@ -29,3 +28,15 @@
       </ul>
    </div>
 </template>
+
+<script setup>
+ const user = useSupabaseUser();
+ const supabase = useSupabaseClient();
+
+//fetch employees
+
+let { data: Employees, error } = await supabase
+  .from('Employees')
+  .select('*')
+
+</script>

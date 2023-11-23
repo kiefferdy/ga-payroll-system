@@ -5,22 +5,20 @@
             <div class="card card-side">
                <p class="pe-2 mt-1">Employee:</p>
                <div class="dropdown dropdown-hover w-56 border-button_green border-2 rounded-md">
-                  <label tabindex="0" class="ps-3">Name</label>
+                  <label tabindex="0" class="ps-3">{{ currentEmployeeName || 'Name' }}</label>
                   <ul tabindex="0" class="dropdown-content z-[1] menu rounded-md shadow bg-primary_white w-56   py-2 px-3">
-                     <li class="py-1">Reign Larraquel</li>
-                     <li class="py-1">Rafael Austria</li>
-                     <li class="py-1">Jose Rizal</li>
+                     <li v-for="p in Employees" class="py-1" @click="setCurrentEmployee(p)">{{p.first_name}} {{ p.last_name }}</li>
                   </ul>
                </div>
             </div>
             <div class="card card-side">
                <p class="pe-2 mt-1">Week:</p>
                <div class="dropdown dropdown-hover w-64 border-button_green border-2 rounded-md">
-                  <label tabindex="0" class="ps-3">00/00/0000 - 00/00/0000</label>
+                  <label tabindex="0" class="ps-3">{{ selectedWeek }}</label>
                   <ul tabindex="0" class="dropdown-content z-[1] menu rounded-md shadow bg-primary_white w-64 py-2 px-3">
-                     <li class="py-1">10/15/2023 - 10/21/2023</li>
-                     <li class="py-1">10/22/2023 - 10/28/2023</li>
-                     <li class="py-1">10/29/2023 - 11/04/2023</li>
+                     <li v-for="w in weeks" class="py-1" @click="handleWeekClick(w)">
+                     {{ w }}
+                     </li>
                   </ul>
                </div>
             </div>
@@ -54,9 +52,12 @@
                   </tr>
                   <tr>
                      <th>Tues</th>
-                     <td>8:00</td>
-                     <td>22:00</td>
-                     <td>14:00</td>
+                     <td v-if="time_sheet && time_sheet[0] !== null">{{ time_sheet[0].time_in }}</td>
+                     <td v-else></td>
+                     <td v-if="time_sheet && time_sheet[0] !== null">{{ time_sheet[0].time_out }}</td>
+                     <td v-else></td>
+                     <td v-if="time_sheet && time_sheet[0] !== null">{{time_sheet[0].time_in }}</td>
+                     <td v-else></td>
                      <td>13</td>
                      <td></td>
                      <td>942.50</td>
@@ -65,9 +66,12 @@
                   </tr>
                   <tr>
                      <th>Wed</th>
-                     <td>8:00</td>
-                     <td>17:00</td>
-                     <td>9:00</td>
+                     <td v-if="time_sheet && time_sheet[0] !== null">{{ time_sheet[1].time_in }}</td>
+                     <td v-else></td>
+                     <td v-if="time_sheet && time_sheet[0] !== null">{{ time_sheet[1].time_out }}</td>
+                     <td v-else></td>
+                     <td v-if="time_sheet && time_sheet[0] !== null">{{time_sheet[1].time_in }}</td>
+                     <td v-else></td>
                      <td>8</td>
                      <td></td>
                      <td>580.00</td>
@@ -76,9 +80,12 @@
                   </tr>
                   <tr>
                      <th>Thurs</th>
-                     <td>8:00</td>
-                     <td>20:30</td>
-                     <td>12:30</td>
+                     <td v-if="time_sheet && time_sheet[2] !== null">{{ time_sheet[2].time_in }}</td>
+                     <td v-else></td>
+                     <td v-if="time_sheet && time_sheet[2] !== null">{{ time_sheet[2].time_out }}</td>
+                     <td v-else></td>
+                     <td v-if="time_sheet && time_sheet[2] !== null">{{time_sheet[2].time_in }}</td>
+                     <td v-else></td>
                      <td>11</td>
                      <td>30</td>
                      <td>797.50</td>
@@ -87,9 +94,12 @@
                   </tr>
                   <tr>
                      <th>Fri</th>
-                     <td>8:00</td>
-                     <td>17:00</td>
-                     <td>9:00</td>
+                     <td v-if="time_sheet && time_sheet[0] !== null">{{ time_sheet[0].time_in }}</td>
+                     <td v-else></td>
+                     <td v-if="time_sheet && time_sheet[0] !== null">{{ time_sheet[0].time_out }}</td>
+                     <td v-else></td>
+                     <td v-if="time_sheet && time_sheet[0] !== null">{{time_sheet[0].time_in }}</td>
+                     <td v-else></td>
                      <td>8</td>
                      <td>30</td>
                      <td>580.00</td>
@@ -98,9 +108,12 @@
                   </tr>
                   <tr>
                      <th>Sat</th>
-                     <td>8:00</td>
-                     <td>16:00</td>
-                     <td>8:00</td>
+                     <td v-if="time_sheet && time_sheet[2] !== null">{{ time_sheet[2].time_in }}</td>
+                     <td v-else></td>
+                     <td v-if="time_sheet && time_sheet[2] !== null">{{ time_sheet[2].time_out }}</td>
+                     <td v-else></td>
+                     <td v-if="time_sheet && time_sheet[2] !== null">{{time_sheet[2].time_in }}</td>
+                     <td v-else></td>
                      <td>7</td>
                      <td></td>
                      <td>507.50</td>
@@ -191,3 +204,89 @@
       </ul>
    </div>
 </template>
+
+<script setup>
+ const user = useSupabaseUser();
+ const supabase = useSupabaseClient();
+
+//fetch employees
+
+let { data: Employees, error } = await supabase
+  .from('Employees')
+  .select('*')
+
+
+  const currentEmployeeName = ref(null);
+  const currentEmployeeId = ref(null);
+const setCurrentEmployee = (employee) => {
+  currentEmployeeName.value = `${employee.first_name} ${employee.last_name}`;
+  currentEmployeeId.value = employee.id;
+};
+const selectedWeek = ref('Select Week');
+const weeks = generateWeeks(); // Generate your list of weeks
+
+function generateWeeks() {
+  const generatedWeeks = [];
+  const today = new Date();
+  const oneDay = 24 * 60 * 60 * 1000; // One day in milliseconds
+
+  for (let i = 0; i < 13; i++) {
+    const endDate = new Date(today.getTime() - i * 7 * oneDay); // Calculate the end date
+    const startDate = new Date(endDate.getTime() - 6 * oneDay); // Calculate the start date
+
+    const formattedStartDate = formatDate(startDate);
+    const formattedEndDate = formatDate(endDate);
+
+    generatedWeeks.push(`${formattedStartDate} - ${formattedEndDate}`);
+  }
+
+  return generatedWeeks;
+}
+
+function formatDate(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+const handleWeekClick = (week) => {
+  selectedWeek.value = week;
+  const { startDate, endDate } = getStartAndEndDate(week);
+  fetchTimeSheet(startDate, endDate);
+};
+
+const getStartAndEndDate = (week) => {
+  const [startDateStr, endDateStr] = week.split(' - ');
+  const [startYear, startMonth, startDay] = startDateStr.split('-').map(Number);
+  const [endYear, endMonth, endDay] = endDateStr.split('-').map(Number);
+
+  const startDate = new Date(startYear, startMonth - 1, startDay);
+  const endDate = new Date(endYear, endMonth - 1, endDay);
+
+  return { startDate, endDate };
+};
+
+const end_date = ref(null);
+const start_date = ref(null);
+const time_sheet = ref(null);
+const time_sheet_array = ref(null);
+async function fetchTimeSheet(startDate, endDate) {
+   console.log(currentEmployeeId.value);
+   console.log("went here");
+   start_date.value = formatDate(startDate);
+   end_date.value = formatDate(endDate);
+
+let { data: TimeSheet, error } = await supabase
+  .from('TimeSheet')
+  .select('*')
+  .gte('date', formatDate(startDate))// Set the 'Greater than or equal to' filter
+  .lte('date', formatDate(endDate)) // Set the 'Less than or equal to' filter
+  .eq('user_id', currentEmployeeId.value);
+   time_sheet.value = null;
+  time_sheet.value = TimeSheet;
+
+};
+
+
+</script>
