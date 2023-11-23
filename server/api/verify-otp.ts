@@ -9,7 +9,7 @@ const phoneNumber = process.env.NUXT_OTP_PHONE_NUMBER;
 
 // Verify that the required environment variables are set
 if (!accountSid || !authToken || !serviceSid || !phoneNumber || !email) {
-    throw new Error('Missing required environment variables for Twilio.');
+    throw new Error('Missing required environment variables for Twilio');
 }
 
 const client = Twilio(accountSid, authToken);

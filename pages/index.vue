@@ -121,6 +121,21 @@
             }
          };
 
+         // Get server time function
+         const getServerTime = async () => {
+            try {
+               const response = await fetch('/api/clock');
+               if (!response.ok) {
+                  throw new Error("Error fetching server time");
+               }
+               const data = await response.json();
+               return data.time;
+            } catch (error) {
+               console.error(error);
+               return null;
+            }
+         }
+
          // Initialize time-in function (runs when user clicks time-in button)
          const initializeTimeIn = async () => {
             const { data: { user } } = await supabase.auth.getUser();  // Get the current user
@@ -155,8 +170,13 @@
 
             // Check if the user exists
             if (user) {
-               // Get the current timestamp
-               const currentTime = new Date().toISOString();
+               // Get the current timestamp from the server
+               const currentTime = await getServerTime();
+
+               if (!currentTime) {
+                  console.error("Failed to fetch server time");
+                  return;
+               }
                console.log("Time-in time:", currentTime);
 
                // Check if employee is already timed-in
@@ -208,7 +228,12 @@
             // Check if the user exists
             if (user) {
                // Get the current timestamp
-               const currentTime = new Date().toISOString();
+               const currentTime = await getServerTime();
+
+               if (!currentTime) {
+                  console.error("Failed to fetch server time");
+                  return;
+               }
                console.log("Attempting to send OTP at time:", currentTime);
 
                // Check if employee is already timed-in

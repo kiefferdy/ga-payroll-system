@@ -121,6 +121,21 @@
             }
          };
 
+         // Get server time function
+         const getServerTime = async () => {
+            try {
+               const response = await fetch('/api/clock');
+               if (!response.ok) {
+                  throw new Error("Error fetching server time");
+               }
+               const data = await response.json();
+               return data.time;
+            } catch (error) {
+               console.error(error);
+               return null;
+            }
+         }
+
          // Time-out function
          const timeOut = async () => {
             const { data: { user } } = await supabase.auth.getUser();  // Get the current user
@@ -128,7 +143,13 @@
             // Check if the user exists
             if (user) {
                // Get the current timestamp for time-out
-               const currentTimeOut = new Date().toISOString();
+               const currentTimeOut = await getServerTime();
+
+               if (!currentTimeOut) {
+                  console.error("Failed to fetch server time");
+                  return;
+               }
+               console.log("Time-out time:", currentTimeOut);
 
                // Retrieve the user's current time-in status and time-in timestamp
                const { data: employeeData, error: employeeError } = await supabase
@@ -157,7 +178,8 @@
                         user_id: user.id,
                         time_in: employeeData.time_in,
                         time_out: currentTimeOut,
-                        duration: durationMinutes
+                        duration: durationMinutes,
+                        date: employeeData.time_in
                      });
 
                   if (timeSheetError) {
