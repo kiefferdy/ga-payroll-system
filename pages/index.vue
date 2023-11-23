@@ -1,4 +1,5 @@
 <template>
+   <Title>Employee Home</Title>
    <div class="card text-black flex items-center justify-center h-[30rem] w-[60rem]">
       <div class="flex flex-row self-end">
          <p class="mr-4 ">Status:</p>
