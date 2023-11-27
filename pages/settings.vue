@@ -13,7 +13,7 @@
              <br>
              <input :type="passwordFieldType" type="text" placeholder="Password" class="input input-sm bg-primary_white border-2 border-search_stroke_gray text-black rounded w-60 ml-4" v-model="password" />
              <br>
-             <input type="checkbox" @click="hidePassword = !hidePassword" class="ml-4 mt-3" />Show Password
+             <input type="checkbox" @click="hidePassword = !hidePassword" class="ml-4 mt-3" />  Show Password
              <br>
              <button class="btn btn-sm bg-dark_green btn-ghost text-white rounded-full capitalize w-60 mt-4 ml-4">Save Changes</button>
           </div>
