@@ -31,7 +31,7 @@
 
             const { data: { user } } = await supabase.auth.getUser();  // Get the current user
 
-            if(user) {
+            if (user) {
 
                const { data, error } = await supabase
                   .from('Employees')

@@ -13,7 +13,7 @@ const serviceSid = process.env.NUXT_TWILIO_VERIFY_SERVICE_SID;
 
 // Verify that the required environment variables are set
 if (!accountSid || !authToken || !serviceSid || !supabaseUrl || !supabaseKey) {
-    throw new Error('Missing required environment variables for Twilio');
+    throw new Error('Missing environment variables required for Twilio Verify');
 }
 
 const supabase = createClient(supabaseUrl, supabaseKey);
@@ -24,26 +24,35 @@ export default defineEventHandler(async () => {
         // Fetch settings from Supabase
         const { data: settings, error } = await supabase
             .from('Settings')
-            .select('otp_email, otp_phone')
+            .select('otp_email, otp_phone, otp_channel')
             .single();
 
         if (error || !settings) {
             throw new Error('Failed to fetch settings from the database');
         }
 
-        const { otp_email: email, otp_phone: phoneNumber } = settings;
+        const { otp_email: email, otp_phone: phoneNumber, otp_channel: channel } = settings;
 
         // Verify that the required settings are fetched
-        if (!phoneNumber || !email) {
-            throw new Error('Missing required settings for Twilio');
+        if (!phoneNumber || !email || !channel) {
+            throw new Error('Missing settings required for Twilio Verify');
         }
 
-        // Call Twilio to send the OTP
-        const verification = await client.verify.v2.services(serviceSid)
-            .verifications
-            .create({ to: email, channel: 'email' }); // Channel can either be 'sms', 'whatsapp', or 'email' (recommended)
+        if (channel.toLowerCase() == 'email') {
+            // Call Twilio to send the OTP via email
+            const verification = await client.verify.v2.services(serviceSid)
+                .verifications
+                .create({ to: email, channel: channel.toLowerCase() });
 
-        return { success: true, verificationSid: verification.sid };
+            return { success: true, verificationSid: verification.sid };
+        } else {
+            // Call Twilio to send the OTP via SMS or WhatsApp
+            const verification = await client.verify.v2.services(serviceSid)
+                .verifications
+                .create({ to: phoneNumber, channel: channel.toLowerCase() });
+
+            return { success: true, verificationSid: verification.sid };
+        }
     } catch (error) {
         if (error instanceof Error) {
             return { error: error.message };

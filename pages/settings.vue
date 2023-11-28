@@ -3,15 +3,24 @@
       <!-- Account Credentials Column -->
       <div class="flex-1 bg-primary_white rounded-l-[1rem] p-10">
          <label for="company-email" class="block mb-2">Account Email:</label>
-         <input id="company-email" type="email" placeholder="Email" class="w-full input bg-primary_white border-2 border-search_stroke_gray text-black rounded mb-4">
+         <input v-model="accountEmail" id="company-email" type="email" placeholder="New Email" class="w-full input bg-primary_white border-2 border-search_stroke_gray text-black rounded mb-4">
 
          <label for="company-password" class="block mb-2">Account Password:</label>
-         <input id="company-password" :type="passwordFieldType" placeholder="Password" class="w-full input bg-primary_white border-2 border-search_stroke_gray text-black rounded mb-2" v-model="password">
+         <input v-model="password" id="company-password" :type="passwordFieldType" placeholder="New Password" class="w-full input bg-primary_white border-2 border-search_stroke_gray text-black rounded mb-2">
          <div class="flex items-center mb-4">
             <input type="checkbox" id="show-password" @click="hidePassword = !hidePassword" class="mr-2" />
             <label for="show-password">Show Password</label>
          </div>
-         <button class="btn bg-dark_green text-white rounded-full capitalize w-full mt-7">Update Credentials</button>
+         <button @click="updateCredentials" class="btn bg-dark_green text-white rounded-full capitalize w-full mt-5">Update Credentials</button>
+
+         <!-- Success Notification -->
+         <div v-if="updateAccountSuccess" class="success-message mt-5" role="alert">
+            Credentials updated successfully! If you've changed your email, please check your new email for a confirmation link.
+         </div>
+         <!-- Failure Notification -->
+         <div v-if="updateAccountFailure" class="failure-message mt-5" role="alert">
+            Unable to update credentials!
+         </div>
       </div>
 
       <!-- Settings Column -->
@@ -22,6 +31,14 @@
          <label for="otp-phone" class="block mb-2">OTP Phone Number:</label>
          <input v-model="otpPhone" id="otp-phone" type="tel" placeholder="OTP Phone Number" class="w-full input bg-primary_white border-2 border-search_stroke_gray text-black rounded mb-4">
          
+         <!-- OTP Channel Selector -->
+         <label for="otp-channel" class="block mb-2">OTP Channel:</label>
+         <select v-model="otpChannel" id="otp-channel" class="w-full input bg-primary_white border-2 border-search_stroke_gray text-black rounded mb-4">
+            <option value="Email">Email</option>
+            <option value="SMS">SMS</option>
+            <option value="WhatsApp">WhatsApp</option>
+         </select>
+
          <div class="flex items-center mb-4">
             <label for="otp-toggle" class="mr-2">Enable OTP:</label>
             <input v-model="otpEnable" id="otp-toggle" type="checkbox" class="toggle toggle-primary">
@@ -46,7 +63,7 @@
             <li class="active bg-primary_white rounded-r-[1rem] py-2 items-center text-black"><NuxtLink to="/settings">Settings</NuxtLink></li>         
          </div>
          <div class="self-end mb-1">
-            <button class="font-bold btn btn-sm btn-ghost btn-circle w-28">Logout<img class="mx-2 w-4 h-4" src="~/assets/icons/exit_white.png"></button>
+            <button @click="logout" class="font-bold btn btn-sm btn-ghost btn-circle w-28">Logout<img class="mx-2 w-4 h-4" src="~/assets/icons/exit_white.png"></button>
          </div>
       </ul>
    </div>
@@ -74,26 +91,41 @@
 
 <script setup>
    import { ref } from 'vue';
+   import { useRouter } from 'vue-router';
+
+   const supabase = useSupabaseClient();
+   const router = useRouter();
 
    // Hide password functionality
    const hidePassword = ref(true);
    const password = ref("");
    const passwordFieldType = computed(() => hidePassword.value ? "password" : "text");
 
-   const supabase = useSupabaseClient();
+   // Account credentials input box controllers
+   const { data: { user } } = await supabase.auth.getUser(); // Gets the current user
+   const accountEmail = ref('');
+   if (user) {
+      accountEmail.value = user.email;
+   }
 
+   // Settings input box controllers
    const otpEmail = ref('');
    const otpPhone = ref('');
    const otpEnable = ref(false);
+   const otpChannel = ref('Email');
+
+   // Success and failure notifs
    const updateSuccess = ref(false);
    const updateFailure = ref(false);
+   const updateAccountSuccess = ref(false);
+   const updateAccountFailure = ref(false);
 
    // Function to fetch settings from Supabase
    const fetchSettings = async () => {
       const { data, error } = await supabase
          .from('Settings')
-         .select('otp_email, otp_phone, otp_enable')
-         .single(); // Assumes there's only one settings row.
+         .select('otp_email, otp_phone, otp_enable, otp_channel')
+         .single(); // There is only one row for the 'Settings' table.
 
       if (error) {
          console.error('Error fetching settings:', error);
@@ -101,6 +133,7 @@
          otpEmail.value = data.otp_email || '';
          otpPhone.value = data.otp_phone || '';
          otpEnable.value = data.otp_enable || false;
+         otpChannel.value = data.otp_channel || '';
       }
    };
 
@@ -112,13 +145,14 @@
          otp_email: otpEmail.value,
          otp_phone: otpPhone.value,
          otp_enable: otpEnable.value,
+         otp_channel: otpChannel.value,
          last_updated: new Date()
       };
 
       const { error } = await supabase
          .from('Settings')
          .update(updates)
-         .match({ id: 1 }); // Replace with the correct identifier for your settings row.
+         .match({ id: 1 });
 
       if (error) {
          console.error('Error updating settings:', error);
@@ -126,9 +160,40 @@
          updateFailure.value = true; // Display fail notif
          setTimeout(() => updateFailure.value = false, 5000); // Hides notif after 5 seconds
       } else {
+         console.log('Project settings successfully updated!');
          updateSuccess.value = true; // Display success notif
          updateFailure.value = false;
          setTimeout(() => updateSuccess.value = false, 5000); // Hides notif after 5 seconds
+      }
+   };
+
+   // Function to update user account credentials in Supabase Auth
+   const updateCredentials = async () => {
+      const { data, error } = await supabase.auth.updateUser({
+         email: accountEmail.value,
+         password: password.value
+      });
+
+      if (error) {
+         console.error('Error updating account credentials:', error);
+         updateAccountSuccess.value = false;
+         updateAccountFailure.value = true; // Display fail notif
+         setTimeout(() => updateAccountFailure.value = false, 5000); // Hides notif after 5 seconds
+      } else {
+         console.log('Account credentials successfully updated for current user:', data);
+         updateAccountSuccess.value = true; // Display success notif
+         updateAccountFailure.value = false;
+         setTimeout(() => updateAccountSuccess.value = false, 10000); // Hides notif after 10 seconds
+      }
+   };
+
+   // Logout function
+   const logout = async () => {
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+         console.error("Error logging out:", error);
+      } else {
+         router.push('/login');
       }
    };
 </script>
