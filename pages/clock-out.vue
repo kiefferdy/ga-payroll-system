@@ -1,6 +1,12 @@
 <template>
    <Title>Employee Home</Title>
    <div class="card text-black flex items-center justify-center h-[30rem] w-[60rem]">
+      <!-- Settings Icon as a Button -->
+      <div v-if="userIsAdmin" class="absolute top-0 left-0">
+         <button @click="goToSettings" class="flex items-center justify-center">
+            <img src="~/assets/icons/settings.png" alt="Settings" class="w-6 h-6"> <!-- Adjust the path and size as needed -->
+         </button>
+      </div>
       <div class="flex flex-row self-end">
          <p class="mr-4 ">Status:</p>
          <div class="bg-clock_in_green rounded-full w-2.5 h-2.5 mx-1 mt-2"></div>
@@ -32,7 +38,7 @@
 
             const { data: { user } } = await supabase.auth.getUser();  // Get the current user
 
-            if(user) {
+            if (user) {
 
                const { data, error } = await supabase
                   .from('Employees')
@@ -122,6 +128,21 @@
             }
          };
 
+         // Get server time function
+         const getServerTime = async () => {
+            try {
+               const response = await fetch('/api/clock');
+               if (!response.ok) {
+                  throw new Error("Error fetching server time");
+               }
+               const data = await response.json();
+               return data.time;
+            } catch (error) {
+               console.error(error);
+               return null;
+            }
+         }
+
          // Time-out function
          const timeOut = async () => {
             const { data: { user } } = await supabase.auth.getUser();  // Get the current user
@@ -129,7 +150,13 @@
             // Check if the user exists
             if (user) {
                // Get the current timestamp for time-out
-               const currentTimeOut = new Date().toISOString();
+               const currentTimeOut = await getServerTime();
+
+               if (!currentTimeOut) {
+                  console.error("Failed to fetch server time");
+                  return;
+               }
+               console.log("Time-out time:", currentTimeOut);
 
                // Retrieve the user's current time-in status and time-in timestamp
                const { data: employeeData, error: employeeError } = await supabase
@@ -158,7 +185,8 @@
                         user_id: user.id,
                         time_in: employeeData.time_in,
                         time_out: currentTimeOut,
-                        duration: durationMinutes
+                        duration: durationMinutes,
+                        date: employeeData.time_in
                      });
 
                   if (timeSheetError) {
@@ -191,7 +219,48 @@
             }
          };
 
-         return { currentTime, greeting, username, logout, timeOut };
+         // True if user is an admin or developer
+         const userIsAdmin = ref(false);
+
+         // Verification check to see if user is an admin or developer before showing settings icon
+         const verifyUserRank = async () => {
+            const { data: { user } } = await supabase.auth.getUser();  // Get the current user
+
+            if (user) {
+               // Check if employee is an admin or developer
+               const { data, error } = await supabase
+                  .from('Employees')
+                  .select('rank')
+                  .eq('id', user.id);
+
+               if (error) {
+                  console.log("Error fetching data from Supabase:", error);
+                  return;
+               } else if (data && data.length > 0) {
+                  const userRole = data[0].rank;
+                  if (userRole.toLowerCase() == 'admin' || userRole.toLowerCase() == 'developer') {
+                     userIsAdmin.value = true;
+                  }
+               } else {
+                  console.log("No data returned from Supabase.");
+               }
+            } else {
+               console.log("User is not logged in.");
+            }
+         }
+
+         verifyUserRank();
+
+         // Settings link
+         const goToSettings = async () => {
+            if (userIsAdmin.value) {
+               router.push('/settings');
+            } else {
+               console.log("Access denied. User is not an admin or developer.");
+            }
+         };
+
+         return { currentTime, greeting, username, userIsAdmin, logout, timeOut, goToSettings };
       }
    };
 

@@ -1,6 +1,12 @@
 <template>
    <Title>Employee Home</Title>
    <div class="card text-black flex items-center justify-center h-[30rem] w-[60rem]">
+      <!-- Settings Icon as a Button -->
+      <div v-if="userIsAdmin" class="absolute top-0 left-0">
+         <button @click="goToSettings" class="flex items-center justify-center">
+            <img src="~/assets/icons/settings.png" alt="Settings" class="w-6 h-6"> <!-- Adjust the path and size as needed -->
+         </button>
+      </div>
       <div class="flex flex-row self-end">
          <p class="mr-4 ">Status:</p>
          <div class="bg-clock_out_red rounded-full w-2.5 h-2.5 mx-1 mt-2"></div>
@@ -122,28 +128,59 @@
             }
          };
 
+         // Get server time function
+         const getServerTime = async () => {
+            try {
+               const response = await fetch('/api/clock');
+               if (!response.ok) {
+                  throw new Error("Error fetching server time");
+               }
+               const data = await response.json();
+               return data.time;
+            } catch (error) {
+               console.error(error);
+               return null;
+            }
+         }
+
          // Initialize time-in function (runs when user clicks time-in button)
          const initializeTimeIn = async () => {
             const { data: { user } } = await supabase.auth.getUser();  // Get the current user
 
             if (user) {
-               // Check if the user requires OTP or not
-               const { data, error } = await supabase
-                  .from('Employees')
-                  .select('requires_otp')
-                  .eq('id', user.id);
+               // Check the global OTP enable setting first
+               const { data: globalSettings, error: settingsError } = await supabase
+                  .from('Settings')
+                  .select('otp_enable')
+                  .single();
 
-               if (error) {
-                  console.log("Error fetching data from Supabase:", error);
-               } else if (data && data.length > 0) {
-                  const requiresOtp = `${data[0].requires_otp}`;
-                  if (requiresOtp == 'true') {
-                     timeInWithOTP();
+               if (settingsError) {
+                  console.error("Error fetching global settings:", settingsError);
+                  return;
+               }
+
+               if (globalSettings.otp_enable) {
+                  // If OTP feature is globally enabled
+                  const { data, error } = await supabase
+                     .from('Employees')
+                     .select('requires_otp')
+                     .eq('id', user.id);
+
+                  if (error) {
+                     console.log("Error fetching data from Supabase:", error);
+                  } else if (data && data.length > 0) {
+                     const requiresOtp = `${data[0].requires_otp}`;
+                     if (requiresOtp == 'true') {
+                        timeInWithOTP(); // Call OTP version if user requires OTP
+                     } else {
+                        timeIn(); // Call regular version otherwise
+                     }
                   } else {
-                     timeIn();
+                     console.log("No data returned from Supabase.");
                   }
                } else {
-                  console.log("No data returned from Supabase.");
+                  console.log(globalSettings.otp_enable);
+                  timeIn(); // Call regular version if OTP is globally disabled
                }
             } else {
                console.log("User is not logged in.");
@@ -156,8 +193,13 @@
 
             // Check if the user exists
             if (user) {
-               // Get the current timestamp
-               const currentTime = new Date().toISOString();
+               // Get the current timestamp from the server
+               const currentTime = await getServerTime();
+
+               if (!currentTime) {
+                  console.error("Failed to fetch server time");
+                  return;
+               }
                console.log("Time-in time:", currentTime);
 
                // Check if employee is already timed-in
@@ -209,7 +251,12 @@
             // Check if the user exists
             if (user) {
                // Get the current timestamp
-               const currentTime = new Date().toISOString();
+               const currentTime = await getServerTime();
+
+               if (!currentTime) {
+                  console.error("Failed to fetch server time");
+                  return;
+               }
                console.log("Attempting to send OTP at time:", currentTime);
 
                // Check if employee is already timed-in
@@ -226,13 +273,11 @@
                   if (!timeInStatus) {
                      // If the user is not timed-in, send an OTP before proceeding
                      try {
-                        // Replace 'send-otp-endpoint' with the correct URL/path to your sendOtp function
                         const otpResponse = await fetch('/api/send-otp', {
                            method: 'POST',
                            headers: {
                            'Content-Type': 'application/json'
                            },
-                           // No need to send phone number if it's fixed and handled in the backend
                         });
                         const otpResult = await otpResponse.json();
                         
@@ -257,7 +302,48 @@
             }
          };
 
-         return { currentTime, greeting, username, initializeTimeIn, logout };
+         // True if user is an admin or developer
+         const userIsAdmin = ref(false);
+
+         // Verification check to see if user is an admin or developer before showing settings icon
+         const verifyUserRank = async () => {
+            const { data: { user } } = await supabase.auth.getUser();  // Get the current user
+
+            if (user) {
+               // Check if employee is an admin or developer
+               const { data, error } = await supabase
+                  .from('Employees')
+                  .select('rank')
+                  .eq('id', user.id);
+
+               if (error) {
+                  console.log("Error fetching data from Supabase:", error);
+                  return;
+               } else if (data && data.length > 0) {
+                  const userRole = data[0].rank;
+                  if (userRole.toLowerCase() == 'admin' || userRole.toLowerCase() == 'developer') {
+                     userIsAdmin.value = true;
+                  }
+               } else {
+                  console.log("No data returned from Supabase.");
+               }
+            } else {
+               console.log("User is not logged in.");
+            }
+         }
+
+         verifyUserRank();
+
+         // Settings link
+         const goToSettings = async () => {
+            if (userIsAdmin.value) {
+               router.push('/settings');
+            } else {
+               console.log("Access denied. User is not an admin or developer.");
+            }
+         };
+
+         return { currentTime, greeting, username, userIsAdmin, initializeTimeIn, logout, goToSettings };
       }
    };
 

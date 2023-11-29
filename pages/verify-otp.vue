@@ -167,13 +167,11 @@
             if (!timeInStatus) {
                // If the user is not timed-in, send an OTP before proceeding
                try {
-                  // Replace 'send-otp-endpoint' with the correct URL/path to your sendOtp function
                   const otpResponse = await fetch('/api/send-otp', {
                      method: 'POST',
                      headers: {
                      'Content-Type': 'application/json'
                      },
-                     // No need to send phone number if it's fixed and handled in the backend
                   });
                   const otpResult = await otpResponse.json();
                   
