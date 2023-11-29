@@ -1,4 +1,5 @@
 <template>
+   <Title>Employee Home</Title>
    <div class="card text-black flex items-center justify-center h-[30rem] w-[60rem]">
       <!-- Settings Icon as a Button -->
       <div v-if="userIsAdmin" class="absolute top-0 left-0">

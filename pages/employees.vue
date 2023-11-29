@@ -1,4 +1,5 @@
 <template>
+   <Title>Admin</Title>
    <div class="card card-side h-[37rem] w-[65rem] bg-dark_green text-black">
       <div class="card h-[37rem] w-[55rem] bg-primary_white rounded rounded-l-[1rem] rounded-tr-[0rem] rounded-br-[1rem]">
          <div class="card card-side  mx-10 mt-5 justify-between">
@@ -11,10 +12,9 @@
             </div> 
          </div>
          <div>
-            <ProfileCard/>
-            <ProfileCard/>
-            <ProfileCard/>
-            <ProfileCard/>
+            <div v-for="p in Employees">
+               <ProfileCard :Employees="p"/>
+            </div>
          </div>
       </div>
       <ul class="menu w-[10rem] p-0 font-bold text-white justify-between">
@@ -29,3 +29,15 @@
       </ul>
    </div>
 </template>
+
+<script setup>
+ const user = useSupabaseUser();
+ const supabase = useSupabaseClient();
+
+//fetch employees
+
+let { data: Employees, error } = await supabase
+  .from('Employees')
+  .select('*')
+
+</script>

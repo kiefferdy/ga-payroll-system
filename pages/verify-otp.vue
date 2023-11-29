@@ -1,4 +1,5 @@
 <template>
+   <Title>Verify Time-In</Title>
    <div class="card text-black items-center text-center justify-center h-[30rem] w-[60rem]">
       <h1 class="card-title justify-center text-2xl">ENTER CODE</h1>
       <p>OTP</p>
