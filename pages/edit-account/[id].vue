@@ -1,7 +1,7 @@
 <template>
    <Title>Admin</Title>
    <div class="card text-black flex justify-center h-[30rem] w-[35rem]">
-      <h1 class="card-title mb-5">Create Account</h1>
+      <h1 class="card-title mb-5">Edit Account of {{ employee.first_name }} {{ employee.last_name }}</h1>
       <div class="card card-side justify-between">
          <div>
             <label class="label-text text-black mt-4 font-bold">First Name<br></label>
@@ -31,7 +31,7 @@
          <NuxtLink to="/employees">
             <button class="btn btn-ghost rounded-full btn-sm bg-dark_gray text-white ml-10 mr-1 px-5">Cancel</button>
          </NuxtLink>
-         <button @click="handleSignUp" class="btn btn-ghost rounded-full btn-sm bg-button_green text-white m-1">Conitnue</button>
+         <button @click="handleEdit" class="btn btn-ghost rounded-full btn-sm bg-button_green text-white m-1">Conitnue</button>
       </div>
       <div v-if="invalidEmail" class="mt-2 self-center error">Email is Invalid</div>
       <div v-if="passwordsNotMatch" class="mt-2 self-center error">Passwords do not match</div>
@@ -39,20 +39,25 @@
       <div v-if="emailTaken" class="mt-2 self-center error">Email is already taken</div>
    </div>
 </template>
-
-<style scoped>
-.error {
-  color: red;
-}
-</style>
-
+ 
+ <style scoped>
+ .error {
+   color: red;
+ }
+ </style>
+ 
 <script setup>
+   const supabase = useSupabaseClient();
+   const { id } = useRoute().params
+   // fetch employee from public
+   const { data: employee } = await supabase
+      .from('Employees')
+      .select('*')
+      .eq('id', id)
+      .single();
 
- const user = useSupabaseUser();
- const supabase = useSupabaseClient();
-
-const firstName = ref('');
-const lastName = ref('');
+const firstName = ref(employee.first_name);
+const lastName = ref(employee.last_name);
 const email = ref('');
 const password = ref('');
 const verifyPassword = ref('');
@@ -63,7 +68,7 @@ const passwordsNotMatch = ref(false);
 const incompleteFields = ref(false);
 const emailTaken = ref(false);
 
-async function handleSignUp(){
+async function handleEdit() {
   invalidEmail.value = !validateEmail(email.value);
   passwordsNotMatch.value = password.value !== verifyPassword.value;
   incompleteFields.value = !firstName.value || !lastName.value || !email.value || !password.value || !verifyPassword.value;
@@ -73,35 +78,39 @@ async function handleSignUp(){
   }
 
   try {
-    const { error } = await supabase.auth.signUp({
-      email: email.value,
-      password: password.value,
+   const { data, error } = await supabase
+      .from('Employees')
+      .update({
+        first_name: firstName.value,
+        last_name: lastName.value,
+        // TODO: have to fix email and password update w/o needing email verification
+        email: email.value,
+        password: password.value,
+        needs_otp: needsOTP.value,
+      })
+      .eq('id', id)
 
-    });
+   if (error) {
+      if (email.value != employee.email.value && error.message.includes('unique')) {
+         emailTaken.value = true;
+         }
+         // Handle other signup errors if needed
+         console.error(error);
+         return;
+   }
 
-    if (error) {
-      if (error.message.includes('unique')) {
-        emailTaken.value = true;
-      }
-      // Handle other signup errors if needed
-      console.error(error);
-      return;
-    }
-
-    // Handle successful sign-up
-    console.log('Signed up successfully!');
-    window.alert('Signed up successfully!');
-    router.push('/employees')
-    // Redirect or perform other actions upon successful sign-up
+   // Handle successful sign-up
+    console.log('Updated successfully!');
+    window.alert('Updated successfully!');
+    router.push('/employees');
   } catch (err) {
     // Handle exceptions
     console.error(err);
   }
-};
+}
 
 // Function to validate email format
 function validateEmail(email) {
-  // You can use a regex pattern or any email validation method you prefer
   return /\S+@\S+\.\S+/.test(email);
 }
 </script>
