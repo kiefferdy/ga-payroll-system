@@ -24,7 +24,7 @@
             <li class="py-2 items-center"><NuxtLink to="/settings">Settings</NuxtLink></li>         
          </div>
          <div class="self-end mb-1">
-            <button class="font-bold btn btn-sm btn-ghost btn-circle w-28">Logout<img class="mx-2 w-4 h-4" src="~/assets/icons/exit_white.png"></button>
+            <button @click="logout" class="font-bold btn btn-sm btn-ghost btn-circle w-28">Logout<img class="mx-2 w-4 h-4" src="~/assets/icons/exit_white.png"></button>
          </div>
       </ul>
    </div>
@@ -40,4 +40,13 @@ let { data: Employees, error } = await supabase
   .from('Employees')
   .select('*')
 
+// Logout function
+const logout = async () => {
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+         console.error("Error logging out:", error);
+      } else {
+         router.push('/login');
+      }
+   };
 </script>
