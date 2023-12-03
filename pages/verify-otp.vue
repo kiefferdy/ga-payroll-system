@@ -1,6 +1,16 @@
 <template>
    <Title>Verify Time-In</Title>
-   <div class="card text-black items-center text-center justify-center h-[30rem] w-[60rem]">
+   <div class="relative-container">
+      <div class="card text-black items-center text-center justify-center">
+         <div class="card-actions">
+            <!-- OTP Invalid Notification -->
+            <div v-show="invalidOtp" class="failure-message" role="alert">
+               The OTP you have entered is invalid. Please try again.
+            </div>
+         </div>
+      </div>
+   </div>
+   <div class="card text-black items-center text-center justify-center h-[25rem] w-[60rem]">
       <h1 class="card-title justify-center text-2xl">ENTER CODE</h1>
       <p>OTP</p>
       <div class="join self-center mt-10">
@@ -33,6 +43,26 @@
    </div>
 </template>
 
+<style scoped>
+   .relative-container {
+      position: relative;
+   }
+
+   .failure-message {
+      position: absolute; /* Make the notification absolute */
+      top: 0; /* Position it at the top of the container */
+      left: 50%; /* Center horizontally */
+      transform: translateX(-50%); /* Adjust horizontal centering */
+      background-color: #FF5733; /* Red background */
+      color: white; /* White text */
+      padding: 0.5rem; /* Padding around the text */
+      border-radius: 0.5rem; /* Rounded corners */
+      text-align: center; /* Center the text */
+      width: 43%; /* Full width of the container */
+      box-sizing: border-box; /* Include padding and border in the element's total width and height */
+      margin-top: -55px; /* Bypass padding */
+   }
+</style>
 
 <script setup>
 
@@ -52,6 +82,9 @@
    const otp2Element = ref(null);
    const otp3Element = ref(null);
    const otp4Element = ref(null);
+
+   // Ref for invalid OTP notif
+   const invalidOtp = ref(false);
 
    // Cooldown for resend OTP
    const cooldown = ref(0);
@@ -83,6 +116,8 @@
 
          const data = await response.json();
          if (data.success) {
+            // Remove Invalid OTP notif
+            invalidOtp.value = false;
 
             // Get the current timestamp
             const currentTime = new Date().toISOString();
@@ -111,6 +146,7 @@
             }
          } else {
             console.error('Failed to verify OTP:', data.message);
+            invalidOtp.value = true;
          }
       } catch (err) {
          console.error('Error submitting OTP:', err.message);

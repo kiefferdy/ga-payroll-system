@@ -1,5 +1,5 @@
 <template>
-   <Title>Green at Work - Login</Title>
+   <Title>Green Atwork - Login</Title>
    <div class="card card-side h-[30rem] w-[60rem]">
       <div class="card-body">
          <h1 class="card-title text-black">Account Login</h1>

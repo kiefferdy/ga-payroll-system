@@ -1,4 +1,5 @@
 <template>
+   <Title>Settings</Title>
    <div class="card card-side h-[37rem] w-[65rem] bg-dark_green text-black">
       <!-- Account Credentials Column -->
       <div class="flex-1 bg-primary_white rounded-l-[1rem] p-10">
