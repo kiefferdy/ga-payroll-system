@@ -12,8 +12,8 @@
             </div> 
          </div>
          <div>
-            <div v-for="p in Employees">
-               <ProfileCard :Employees="p"/>
+            <div v-for="p in Employees" :key="p.id">
+               <ProfileCard :employee="p" />
             </div>
          </div>
       </div>
@@ -37,11 +37,49 @@
    const supabase = useSupabaseClient();
    const router = useRouter();
 
-   //fetch employees
+   // Refs for template
+   const Employees = ref([]);
 
-   let { data: Employees, error } = await supabase
-   .from('Employees')
-   .select('*')
+   // Fetch all employees
+   const fetchEmployees = async () => {
+      const { data, error } = await supabase
+         .from('Employees')
+         .select('*');
+
+      Employees.value = data;
+
+      if (error) {
+         console.error(error);
+      }
+   };
+
+   // Verification check to see if user is an admin or developer before showing settings icon
+   const verifyUserRank = async () => {
+      const { data: { user } } = await supabase.auth.getUser();  // Get the current user
+
+      if (user) {
+         // Check if employee is an admin or developer
+         const { data, error } = await supabase
+            .from('Employees')
+            .select('rank')
+            .eq('id', user.id);
+
+         if (error) {
+            console.log("Error fetching data from Supabase:", error);
+            return;
+         } else if (data && data.length > 0) {
+            const userRole = data[0].rank;
+            if (!(userRole.toLowerCase() == 'admin' || userRole.toLowerCase() == 'developer')) {
+               alert('You do not have permission to view this page!');
+               router.push('/');
+            }
+         } else {
+            console.log("No data returned from Supabase.");
+         }
+      } else {
+         console.log("User is not logged in.");
+      }
+   }
 
    // Logout function
    const logout = async () => {
@@ -52,5 +90,9 @@
          router.push('/login');
       }
    };
+
+   // Functions to be run once page loads
+   verifyUserRank();
+   fetchEmployees();
 
 </script>

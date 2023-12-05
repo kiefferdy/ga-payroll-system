@@ -138,8 +138,6 @@
       }
    };
 
-   fetchSettings();
-
    // Function to update settings in Supabase
    const updateSettings = async () => {
       const updates = {
@@ -205,6 +203,7 @@
          } else if (data && data.length > 0) {
             const userRole = data[0].rank;
             if (!(userRole.toLowerCase() == 'admin' || userRole.toLowerCase() == 'developer')) {
+               alert('You do not have permission to view this page!');
                router.push('/');
             }
          } else {
@@ -215,8 +214,6 @@
       }
    }
 
-   verifyUserRank();
-
    // Logout function
    const logout = async () => {
       const { error } = await supabase.auth.signOut();
@@ -226,4 +223,9 @@
          router.push('/login');
       }
    };
+
+   // Functions to be run once page loads
+   fetchSettings();
+   verifyUserRank();
+
 </script>

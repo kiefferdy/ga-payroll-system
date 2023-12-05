@@ -202,6 +202,7 @@
          } else if (data && data.length > 0) {
             const userRole = data[0].rank;
             if (!(userRole.toLowerCase() == 'admin' || userRole.toLowerCase() == 'developer')) {
+               alert('You do not have permission to view this page!');
                router.push('/');
             }
          } else {
@@ -212,6 +213,7 @@
       }
    }
 
+   // Functions to be run once page loads
    verifyUserRank();
 
 </script>

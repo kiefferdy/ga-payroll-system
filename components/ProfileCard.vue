@@ -1,69 +1,115 @@
 <template>
    <div class="card card-side bg-off_white justify-between items-center h-12 p-5 m-5 mx-10">
       <div class="card card-side items-center">
-         <img  src="~/assets/icons/user.png" class="w-8 rounded-full me-2"/>
-         <p>{{ Employees.first_name }} {{ Employees.last_name }}</p>
+         <img src="~/assets/icons/user.png" class="w-8 rounded-full me-2" />
+         <p>{{ employee.first_name }} {{ employee.last_name }}</p>
       </div>
       <div class="card card-side">
          <div class="me-10">
             <div class="flex flex-row self-end">
-               <p class="mr-4 ">Status:</p>
-               <div class="bg-clock_out_red rounded-full w-2.5 h-2.5 mx-1 mt-2"></div>
-               <p>{{ Employees.status }}</p>         
+               <p class="mr-4">Status:</p>
+               <div :class="[employee.time_in_status ? 'bg-clock_in_green' : 'bg-clock_out_red']" class="rounded-full w-2.5 h-2.5 mx-1 mt-2"></div>
+               <p>{{ employee.time_in_status ? 'In' : 'Out' }}</p>         
             </div>
-            <p class="text-xs">Last updated: {{ getMostRecentTime(Employees) }}</p>
+            <p class="text-xs">Last updated: {{ formatTime(employee.last_updated) }}</p>
          </div>
          <div class="card card-side items-center">
-            <NuxtLink :to="`/edit-account/${Employees.id}`">
+            <NuxtLink :to="`/edit-account/${employee.id}`">
                <button class="btn btn-info btn-sm me-2"><img src="~/assets/icons/edit.png" class="w-4"></button>
             </NuxtLink>
-               <button @click="handleDelete" class="btn btn-error btn-sm"><img src="~/assets/icons/delete.png" class="w-4"></button>
+            <button @click="handleDelete" class="btn btn-error btn-sm"><img src="~/assets/icons/delete.png" class="w-4"></button>
          </div>         
       </div>
-
    </div>
 </template>
 
 <script setup>
+
+   import { useRouter } from 'vue-router';
+
    const supabase = useSupabaseClient();
-   const { Employees } = defineProps(['Employees'])
+   const router = useRouter();
 
-   const getMostRecentTime = (person) => {
-  let mostRecentTime = null;
+   const props = defineProps({
+      employee: Object
+   });
 
-  if (!mostRecentTime || new Date(person.time_in) > new Date(mostRecentTime)) {
-    mostRecentTime = person.time_in;
-  }
-  if (!mostRecentTime || new Date(person.time_out) > new Date(mostRecentTime)) {
-    mostRecentTime = person.time_out;
-  }
+   const formatTime = (time) => {
+      const formattedTime = new Date(time);
+      return formattedTime.toLocaleString();
+   };
 
-  return formatTime(mostRecentTime);
-};
+   // Handles employee deletion
+   const handleDelete = async () => {
+      const confirmDelete = window.confirm('Are you sure you want to proceed? Deleting this user will erase all of their data. This action cannot be undone.');
+      
+      if (confirmDelete) {
+         const { data, error } = await supabase
+            .from('Employees')
+            .delete()
+            .eq('id', props.employee.id);
+            
+         if (error) {
+            console.log("Error deleting user: ", error);
+            alert('An error occurred with the deletion process. The user was not deleted.');
+         } else {
+            console.log('Successfully deleted user:', data);
+            const { data: { user } } = await supabase.auth.getUser();  // Get the user performing the action
+            console.log("Retrieved user:", user);
 
-const formatTime = (time) => {
-  const formattedTime = new Date(time);
-  return formattedTime.toLocaleString(); // Adjust this according to the desired format
-};
+            // Sending delete user request to server
+            const response = await fetch('/api/delete-user', {
+                  method: 'POST',
+                  headers: {
+                     'Content-Type': 'application/json'
+                  },
+                  body: JSON.stringify({ 
+                     targetId: props.employee.id,
+                     userId: user.id
+                  })
+            });
 
-// handles employee deletion
-const handleDelete = async () => {
-   const confirmDelete = window.confirm('Are you sure you want to proceed? Deleting this user will erase all of their data.');
-   
-   if (confirmDelete) {
-      const { data, error } = await supabase
-         .from('Employees')
-         .delete()
-         .eq('id', Employees.id);
-         
-      if (error) {
-         console.log("Error deleting user: ", error);
-      } else {
-         console.log('Succesfully deleted user.')
-         console.log(data)
-         window.alert('Succesfully deleted user!')
-         router.push('/employees');
+            const result = await response.json();
+            if (!response.ok) {
+               alert("Unable to delete the user's credentials.");
+            } else {
+               console.log("Successfully deleted user from Supabase Auth:", result.data);
+               alert("The user has been successfully deleted!");
+               router.push('/employees');
+            }
+         }
       }
    }
-}
+
+   // Verification check to see if user is an admin or developer before showing settings icon
+   const verifyUserRank = async () => {
+      const { data: { user } } = await supabase.auth.getUser();  // Get the current user
+
+      if (user) {
+         // Check if employee is an admin or developer
+         const { data, error } = await supabase
+            .from('Employees')
+            .select('rank')
+            .eq('id', user.id);
+
+         if (error) {
+            console.log("Error fetching data from Supabase:", error);
+            return;
+         } else if (data && data.length > 0) {
+            const userRole = data[0].rank;
+            if (!(userRole.toLowerCase() == 'admin' || userRole.toLowerCase() == 'developer')) {
+               alert('You do not have permission to view this page!');
+               router.push('/');
+            }
+         } else {
+            console.log("No data returned from Supabase.");
+         }
+      } else {
+         console.log("User is not logged in.");
+      }
+   }
+
+   // Functions to be run once page loads
+   verifyUserRank();
+
 </script>
