@@ -182,18 +182,61 @@ let advance = 0;
 let deduction = 0;
 let total_bal = 0;
 
-const end_date = ref(null);
-const start_date = ref(null);
-const time_sheet = ref(null);;
+let phr = 0;
+let pmn = 0;
+let notes = "";
+let weekPay = "";
+
+let end_date = "";
+let start_date = "";
 
 let isLoading = true;
+let hasPay = false;
+async function fetchPay(starDate, endDate) {
+   
+   weekPay = (starDate+"-"+endDate);
+
+   let { data: Pay, error } = await supabase
+   .from('Pay')
+   .select('*')
+   .eq('id', currentEmployeeId.value)
+   .eq('week', weekPay)
+
+   if(Pay.length !== 0){
+      hasPay = true;
+      weekTotal = Pay[0].weekTotal;
+      bale = Pay[0].bale;
+      advance = Pay[0].advance;
+      deduction = Pay[0].deduction;
+      total_bal = Pay[0].total_bal;
+
+      phr = Pay[0].pay_hour;
+      pmn = Pay[0].pay_minute;
+      notes = Pay[0].notes;
+
+   } else {
+      hasPay = false;
+      weekTotal = 0;
+      bale = 0;
+      advance = 0;
+      deduction = 0;
+      total_bal = 0;
+      phr = 0;
+      pmn = 0;
+      notes = "";
+      
+   }
+}
 
 async function fetchTimeSheet(startDate, endDate) {
    isLoading = !isLoading;
-   for (let i = 2; i <= 8; i++) {
+   
+   start_date = formatDate(startDate);
+   end_date = formatDate(endDate);
 
-      start_date.value = formatDate(startDate);
-      end_date.value = formatDate(endDate);
+   fetchPay();
+
+   for (let i = 2; i <= 8; i++) {
 
       let { data: TimeSheet, error } = await supabase
          .from('TimeSheet')
@@ -272,8 +315,61 @@ async function fetchTimeSheet(startDate, endDate) {
    }
 };
 
+
+
 const componentKey = ref(0);
-const Rerender = () => {
+
+async function Rerender () {
+isLoading = true;
+componentKey.value += 1;
+
+if (monday_h_pay === 0) {
+    monday_h_pay = phr;
+}
+
+if (monday_m_pay === 0) {
+    monday_m_pay = pmn;
+}
+
+if (tuesday_h_pay === 0) {
+    tuesday_h_pay = phr;
+}
+
+if (tuesday_m_pay === 0) {
+    tuesday_m_pay = pmn;
+}
+
+if (wednesday_h_pay === 0) {
+    wednesday_h_pay = phr;
+}
+
+if (wednesday_m_pay === 0) {
+    wednesday_m_pay = pmn;
+}
+
+if (thursday_h_pay === 0) {
+    thursday_h_pay = phr;
+}
+
+if (thursday_m_pay === 0) {
+    thursday_m_pay = pmn;
+}
+
+if (friday_h_pay === 0) {
+    friday_h_pay = phr;
+}
+
+if (friday_m_pay === 0) {
+    friday_m_pay = pmn;
+}
+
+if (saturday_h_pay === 0) {
+    saturday_h_pay = phr;
+}
+
+if (saturday_m_pay === 0) {
+    saturday_m_pay = pmn;
+}
 
 // Monday
 monday_total = (monday_hrs * monday_h_pay) + (monday_mins * monday_m_pay);
@@ -303,6 +399,45 @@ weekTotal = monday_total + tuesday_total + wednesday_total + thursday_total + fr
 
 total_bal = weekTotal + parseFloat(bale) + parseFloat(advance) - parseFloat(deduction);
 
+if(hasPay){
+   
+const { data, error } = await supabase
+  .from('Pay')
+  .update({ weekTotal: weekTotal,
+            bale: bale,
+            advance: advance,
+            deduction: deduction,
+            total_bal: total_bal,
+            pay_hour: phr,
+            pay_minute: pmn,
+            notes: notes
+            })
+  .eq('id', currentEmployeeId.value)
+  .eq('week', weekPay)
+  .select()
+          
+} else {
+
+   
+const { data, error } = await supabase
+  .from('Pay')
+  .insert([{   id: currentEmployeeId.value,
+               week: weekPay,
+               weekTotal: weekTotal,
+               bale: bale,
+               advance: advance,
+               deduction: deduction,
+               total_bal: total_bal,
+               pay_hour: phr,
+               pay_minute: pmn,
+               notes: notes
+            }])
+  .select()
+          
+   
+  hasPay = true;
+}
+   isLoading = false;
    componentKey.value += 1;
    console.log("rerendered");
 
@@ -487,15 +622,15 @@ const logout = async () => {
                <div class="card card-side justify-between pb-4 pt-1">
                   <div class="pe-36 card card-side">
                      <p class="pe-2 font-bold">Pay per Hr:</p>
-                     <input class="w-20 bg-transparent">
+                     <input v-model="phr" class="w-20 bg-transparent">
                   </div>
                   <div class="pe-36 card card-side">
                      <p class="pe-2 font-bold">Pay per Min:</p>
-                     <input class="w-20 bg-transparent">
+                     <input v-model="pmn" class="w-20 bg-transparent">
                   </div>
                </div>
                <p class="font-bold text-black">Additional Notes:</p>
-               <input type="text" class="w-full h-14 rounded-md bg-off_white border-2 border-dark_green" />
+               <input v-model="notes" type="text" class="w-full h-14 rounded-md bg-off_white border-2 border-dark_green" />
             </div>
             <div class="card px-5 py-2 bg-off_white">
                <table class="text-xs">
