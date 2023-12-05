@@ -1,5 +1,5 @@
 <template>
-   <Title>Admin</Title>
+   <Title>Create Account</Title>
    <div class="card text-black flex justify-center h-[30rem] w-[35rem]">
       <h1 class="card-title mb-5">Create Account</h1>
       <div class="card card-side justify-between">
@@ -31,77 +31,187 @@
          <NuxtLink to="/employees">
             <button class="btn btn-ghost rounded-full btn-sm bg-dark_gray text-white ml-10 mr-1 px-5">Cancel</button>
          </NuxtLink>
-         <button @click="handleSignUp" class="btn btn-ghost rounded-full btn-sm bg-button_green text-white m-1">Conitnue</button>
+         <button @click="handleSignUp" class="btn btn-ghost rounded-full btn-sm bg-button_green text-white m-1">Continue</button>
       </div>
-      <div v-if="invalidEmail" class="mt-2 self-center error">Email is Invalid</div>
-      <div v-if="passwordsNotMatch" class="mt-2 self-center error">Passwords do not match</div>
-      <div v-if="incompleteFields" class="mt-2 self-center error">Please fill all fields before proceeding</div>
-      <div v-if="emailTaken" class="mt-2 self-center error">Email is already taken</div>
+      <div v-if="loadingNotif" class="mt-2 self-center success">Creating the new user...</div>
+      <div v-if="registerSuccess" class="mt-2 self-center success">Success!</div>
+      <div v-if="invalidEmail" class="mt-2 self-center error">Please enter a valid email address.</div>
+      <div v-if="passwordsNotMatch" class="mt-2 self-center error">The passwords do not match.</div>
+      <div v-if="passwordTooShort" class="mt-2 self-center error">The password should be at least 6 characters.</div>
+      <div v-if="incompleteFields" class="mt-2 self-center error">Please fill all fields before proceeding.</div>
+      <div v-if="emailTaken" class="mt-2 self-center error">The entered email address is already taken.</div>
+      <div v-if="insertionError" class="mt-2 self-center error">A database error occurred! Please try again.</div>
+      <div v-if="genericError" class="mt-2 self-center error">An error occurred!</div>
    </div>
 </template>
 
 <style scoped>
-.error {
-  color: red;
-}
+   .error {
+      color: red;
+   }
+
+   .success {
+      color: green;
+   }
 </style>
 
 <script setup>
 
- const user = useSupabaseUser();
- const supabase = useSupabaseClient();
+   import { ref } from 'vue';
+   import { useRouter } from 'vue-router';
 
-const firstName = ref('');
-const lastName = ref('');
-const email = ref('');
-const password = ref('');
-const verifyPassword = ref('');
-const needsOTP = ref(false);
+   const supabase = useSupabaseClient();
+   const router = useRouter();
 
-const invalidEmail = ref(false);
-const passwordsNotMatch = ref(false);
-const incompleteFields = ref(false);
-const emailTaken = ref(false);
+   // Form fields
+   const firstName = ref('');
+   const lastName = ref('');
+   const email = ref('');
+   const password = ref('');
+   const verifyPassword = ref('');
+   const needsOTP = ref(false);
 
-async function handleSignUp(){
-  invalidEmail.value = !validateEmail(email.value);
-  passwordsNotMatch.value = password.value !== verifyPassword.value;
-  incompleteFields.value = !firstName.value || !lastName.value || !email.value || !password.value || !verifyPassword.value;
+   // Notifs
+   const loadingNotif = ref(false);
+   const registerSuccess = ref(false);
+   const invalidEmail = ref(false);
+   const passwordsNotMatch = ref(false);
+   const passwordTooShort = ref(false);
+   const incompleteFields = ref(false);
+   const emailTaken = ref(false);
+   const insertionError = ref(false);
+   const genericError = ref(false);
 
-  if (invalidEmail.value || passwordsNotMatch.value || incompleteFields.value) {
-    return;
-  }
-
-  try {
-    const { error } = await supabase.auth.signUp({
-      email: email.value,
-      password: password.value,
-
-    });
-
-    if (error) {
-      if (error.message.includes('unique')) {
-        emailTaken.value = true;
+   const handleSignUp = async () => {
+      // Verification of user input
+      clearNotifs();
+      validateInputs();
+      if (invalidEmail.value || passwordsNotMatch.value || incompleteFields.value) {
+         return;
       }
-      // Handle other signup errors if needed
-      console.error(error);
-      return;
-    }
 
-    // Handle successful sign-up
-    console.log('Signed up successfully!');
-    window.alert('Signed up successfully!');
-    router.push('/employees')
-    // Redirect or perform other actions upon successful sign-up
-  } catch (err) {
-    // Handle exceptions
-    console.error(err);
-  }
-};
+      try {
+         const { data: { user } } = await supabase.auth.getUser();  // Get the user performing the action
+         console.log("Retrieved user:", user);
 
-// Function to validate email format
-function validateEmail(email) {
-  // You can use a regex pattern or any email validation method you prefer
-  return /\S+@\S+\.\S+/.test(email);
-}
+         // Sending create user request to server
+         const response = await fetch('/api/create-user', {
+               method: 'POST',
+               headers: {
+                  'Content-Type': 'application/json'
+               },
+               body: JSON.stringify({ 
+                  email: email.value,
+                  password: password.value,
+                  userId: user.id
+               })
+         });
+
+         const result = await response.json();
+         if (!response.ok) {
+            if (result.body.error?.message.includes('A user with this email')) {
+               emailTaken.value = true;
+               console.error(result.body.error.message);
+               return;
+            } else if (result.body.error?.message.includes('at least 6 characters')) {
+               passwordTooShort.value = true;
+               console.error(result.body.error.message);
+               return;
+            } else {
+               genericError.value = true;
+               console.error(result.body);
+               return;
+            }
+         }
+
+         // Assuming sign-up was successful and we have the user's UUID
+         console.log(result);
+         clearNotifs();
+         loadingNotif.value = true;
+         const userId = result.body.data.user.id;
+         console.log('New user created:', userId);
+
+         // Insert a new row in the Employees table for the new user
+         const { data: insertData, insertError } = await supabase
+            .from('Employees')
+            .insert([
+               { 
+                  id: userId,
+                  rank: "Employee",
+                  first_name: firstName.value,
+                  last_name: lastName.value,
+                  requires_otp: needsOTP.value,
+                  last_updated: new Date()
+               }
+            ]);
+
+            if (insertError) {
+               // If inserting user to "Employees" table fails
+               loadingNotif.value = false;
+               insertionError.value = true;
+               console.error('Error inserting into Employees table:', insertError);
+               return;
+            }
+
+         loadingNotif.value = false;
+         registerSuccess.value = true;
+         alert('Signed up successfully!');
+         router.push('/employees');
+      } catch (err) {
+         console.error(err);
+         loadingNotif.value = false;
+         genericError.value = true;
+      }
+   };
+
+   function validateInputs() {
+      invalidEmail.value = !validateEmail(email.value);
+      passwordsNotMatch.value = password.value !== verifyPassword.value;
+      incompleteFields.value = !firstName.value || !lastName.value || !email.value || !password.value || !verifyPassword.value;
+   }
+
+   function validateEmail(email) {
+      const regex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+      return regex.test(email);
+   }
+
+   // Clears all error notifications
+   function clearNotifs() {
+      invalidEmail.value = false;
+      passwordsNotMatch.value = false;
+      passwordTooShort.value = false;
+      incompleteFields.value = false;
+      emailTaken.value = false;
+      genericError.value = false;
+   }
+
+   // Verification check to see if user is an admin or developer
+   const verifyUserRank = async () => {
+      const { data: { user } } = await supabase.auth.getUser();  // Get the current user
+
+      if (user) {
+         // Check if employee is an admin or developer
+         const { data, error } = await supabase
+            .from('Employees')
+            .select('rank')
+            .eq('id', user.id);
+
+         if (error) {
+            console.log("Error fetching data from Supabase:", error);
+            return;
+         } else if (data && data.length > 0) {
+            const userRole = data[0].rank;
+            if (!(userRole.toLowerCase() == 'admin' || userRole.toLowerCase() == 'developer')) {
+               router.push('/');
+            }
+         } else {
+            console.log("No data returned from Supabase.");
+         }
+      } else {
+         console.log("User is not logged in.");
+      }
+   }
+
+   verifyUserRank();
+
 </script>

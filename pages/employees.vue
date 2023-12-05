@@ -31,17 +31,20 @@
 </template>
 
 <script setup>
- const user = useSupabaseUser();
- const supabase = useSupabaseClient();
 
-//fetch employees
+   import { useRouter } from 'vue-router';
 
-let { data: Employees, error } = await supabase
-  .from('Employees')
-  .select('*')
+   const supabase = useSupabaseClient();
+   const router = useRouter();
 
-// Logout function
-const logout = async () => {
+   //fetch employees
+
+   let { data: Employees, error } = await supabase
+   .from('Employees')
+   .select('*')
+
+   // Logout function
+   const logout = async () => {
       const { error } = await supabase.auth.signOut();
       if (error) {
          console.error("Error logging out:", error);
@@ -49,4 +52,5 @@ const logout = async () => {
          router.push('/login');
       }
    };
+
 </script>
