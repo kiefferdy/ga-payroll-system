@@ -62,9 +62,6 @@
             }
          }
 
-         // Redirect user to time-in page if user is currently timed-out
-         checkTimeInStatus();
-
          const currentTime = ref("");
          const greeting = ref("");
          const username = ref("");
@@ -91,10 +88,6 @@
             }
          };
 
-         // Initialize and update every minute
-         updateTimeAndGreeting();
-         setInterval(updateTimeAndGreeting, 60000);
-
          // Fetch current user info
          const fetchCurrentUser = async () => {
             const { data: { user } } = await supabase.auth.getUser();  // Get the current user
@@ -115,8 +108,6 @@
                console.log("Error fetching current user data.");
             }
          };
-
-         fetchCurrentUser();
 
          // Logout function
          const logout = async () => {
@@ -259,6 +250,13 @@
                console.log("Access denied. User is not an admin or developer.");
             }
          };
+
+         // Functions to be run once the page loads
+         fetchCurrentUser(); // Fetches the currently signed-in user
+         verifyUserRank(); // Only shows the settings icon if user is an admin or dev
+         checkTimeInStatus(); // Redirect user to time-in page if user is currently timed-out
+         updateTimeAndGreeting(); // Get current time and appropriate greeting
+         setInterval(updateTimeAndGreeting, 60000); // Update time and greeting every minute
 
          return { currentTime, greeting, username, userIsAdmin, logout, timeOut, goToSettings };
       }

@@ -12,24 +12,13 @@ if (!supabaseUrl || !supabaseKey) {
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-async function editUser(email: string, password: string, userId: string) {
+async function getUser(id: string) {
     try {
-        let data, error;
-        console.log(password);
-        if (password !== '') {
-            ({ data, error } = await supabase.auth.admin.updateUserById(
-                userId,
-                { email: email, password: password }
-            ));
-        } else {
-            ({ data, error } = await supabase.auth.admin.updateUserById(
-                userId,
-                { email: email }
-            ));
-        }
+        const { data, error } = await supabase.auth.admin.getUserById(id);
+
         return { data, error };
     } catch (error) {
-        console.error('Error in editUser:', error);
+        console.error('Error in getUser:', error);
         throw error;
     }
 }
@@ -58,7 +47,7 @@ export default defineEventHandler(async (event) => {
     try {
         // Parsing the incoming request to get the new user's email and password
         const body = await readBody(event);
-        const { email, password, targetId, userId } = body; // targetId is the UUID of the to-be-edited user
+        const { targetId, userId } = body;
 
         if (!userId) {
             return { status: 403, body: 'User ID not found' };
@@ -69,11 +58,11 @@ export default defineEventHandler(async (event) => {
             }
         }
 
-        if (!email || !targetId) {
-            return { status: 400, body: 'Missing email or target user ID' };
+        if (!targetId) {
+            return { status: 400, body: 'Missing UUID of user to be retrieved' };
         }
 
-        const response = await editUser(email, password, targetId);
+        const response = await getUser(targetId);
 
         if (response.error) {
             return { status: 500, body: response };

@@ -4,24 +4,24 @@
       <h1 class="card-title mb-5">Create Account</h1>
       <div class="card card-side justify-between">
          <div>
-            <label class="label-text text-black mt-4 font-bold">First Name<br></label>
+            <label class="label-text text-black mt-4 font-bold">First Name*<br></label>
             <input v-model="firstName" type="text" class="input input-sm border-dark_green bg-primary_white rounded w-64" required>
          </div>
          <div>
-            <label class="label-text text-black mt-4 font-bold">Last Name<br></label>
+            <label class="label-text text-black mt-4 font-bold">Last Name*<br></label>
             <input v-model="lastName" type="text" class="input input-sm border-dark_green bg-primary_white rounded w-64" required>
          </div>
       </div>
       <div class="mt-5">
-         <label class="label-text text-black mt-4 font-bold">Email<br></label>
+         <label class="label-text text-black mt-4 font-bold">Email*<br></label>
          <input v-model="email" type="email" class="input input-sm border-dark_green bg-primary_white rounded w-full" required>
       </div>
       <div class="mt-5">
-         <label class="label-text text-black mt-4 font-bold">Password<br></label>
+         <label class="label-text text-black mt-4 font-bold">Password*<br></label>
          <input v-model="password" type="password" class="input input-sm border-dark_green bg-primary_white rounded w-full" required>
       </div>
       <div class="mt-5">
-         <label class="label-text text-black mt-4 font-bold">Confirm Password<br></label>
+         <label class="label-text text-black mt-4 font-bold">Confirm Password*<br></label>
          <input v-model="verifyPassword" type="password" class="input input-sm border-dark_green bg-primary_white rounded w-full" required>
       </div>
       <div class="mt-5">
@@ -37,7 +37,7 @@
       <div v-if="registerSuccess" class="mt-2 self-center success">Success!</div>
       <div v-if="invalidEmail" class="mt-2 self-center error">Please enter a valid email address.</div>
       <div v-if="passwordsNotMatch" class="mt-2 self-center error">The passwords do not match.</div>
-      <div v-if="passwordTooShort" class="mt-2 self-center error">The password should be at least 6 characters.</div>
+      <div v-if="passwordTooShort" class="mt-2 self-center error">The password should be at least 6 characters long.</div>
       <div v-if="incompleteFields" class="mt-2 self-center error">Please fill all fields before proceeding.</div>
       <div v-if="emailTaken" class="mt-2 self-center error">The entered email address is already taken.</div>
       <div v-if="insertionError" class="mt-2 self-center error">A database error occurred! Please try again.</div>
@@ -96,19 +96,19 @@
 
          // Sending create user request to server
          const response = await fetch('/api/create-user', {
-               method: 'POST',
-               headers: {
-                  'Content-Type': 'application/json'
-               },
-               body: JSON.stringify({ 
-                  email: email.value,
-                  password: password.value,
-                  userId: user.id
-               })
+            method: 'POST',
+            headers: {
+               'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ 
+               email: email.value,
+               password: password.value,
+               userId: user.id
+            })
          });
 
          const result = await response.json();
-         if (!response.ok) {
+         if (!(result.status >= 200 && result.status <= 299)) {
             if (result.body.error?.message.includes('A user with this email')) {
                emailTaken.value = true;
                console.error(result.body.error.message);
@@ -119,17 +119,17 @@
                return;
             } else {
                genericError.value = true;
-               console.error(result.body);
+               console.error(result);
                return;
             }
          }
 
          // Assuming sign-up was successful and we have the user's UUID
          console.log(result);
-         clearNotifs();
          loadingNotif.value = true;
          const userId = result.body.data.user.id;
          console.log('New user created:', userId);
+         clearNotifs();
 
          // Insert a new row in the Employees table for the new user
          const { data: insertData, insertError } = await supabase

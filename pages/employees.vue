@@ -16,7 +16,7 @@
          <div>
             <div v-if="filteredEmployees.length == 0">
                <div v-for="p in Employees" :key="p.id">
-                  <ProfileCard :employee="p"/>
+                  <ProfileCard :employee="p" />
                </div>
             </div>
             <div v-else-if="filteredEmployees.length > 0">
@@ -33,7 +33,7 @@
          <div>
             <li class="active bg-primary_white rounded-r-[1rem] py-2 items-center text-black"><NuxtLink to="/employees">Employees</NuxtLink></li>
             <li class="py-2 items-center"><NuxtLink to="/records">Records</NuxtLink></li>
-            <li class="py-2 items-center"><NuxtLink to="/settings">Settings</NuxtLink></li>         
+            <li class="py-2 items-center"><NuxtLink to="/settings">Settings</NuxtLink></li>
          </div>
          <div class="self-end mb-1">
             <button @click="logout" class="font-bold btn btn-sm btn-ghost btn-circle w-28">Logout<img class="mx-2 w-4 h-4" src="~/assets/icons/exit_white.png"></button>
@@ -68,13 +68,14 @@
    // Additional ref for storing filtered employees
    const filteredEmployees = ref([]);
    const searchBar = ref('')
+
    // Search function
    const search = () => {
-   // Convert search input to lowercase for case-insensitive search
-   const searchTerm = searchBar.value.toLowerCase();
+      // Convert search input to lowercase for case-insensitive search
+      const searchTerm = searchBar.value.toLowerCase();
 
-   // Filter the employees based on the search criteria
-   filteredEmployees.value = Employees.value.filter((p) => {
+      // Filter the employees based on the search criteria
+      filteredEmployees.value = Employees.value.filter((p) => {
          const firstNameMatch = p.first_name.toLowerCase().includes(searchTerm);
          const lastNameMatch = p.last_name.toLowerCase().includes(searchTerm);
 
