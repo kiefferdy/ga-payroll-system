@@ -11,18 +11,18 @@
   },
   "devDependencies": {
     "@nuxt/devtools": "latest",
-    "@nuxtjs/supabase": "^1.1.2",
-    "@nuxtjs/tailwindcss": "^6.8.0",
-    "daisyui": "^3.9.3",
-    "nuxt": "^3.7.4",
-    "prettier": "^3.0.3",
-    "prettier-plugin-tailwindcss": "^0.5.4",
-    "vue": "^3.3.4",
+    "@nuxtjs/supabase": "^1.1.4",
+    "@nuxtjs/tailwindcss": "^6.10.1",
+    "daisyui": "^3.9.4",
+    "nuxt": "^3.8.2",
+    "prettier": "^3.1.0",
+    "prettier-plugin-tailwindcss": "^0.5.9",
+    "vue": "^3.3.10",
     "vue-router": "^4.2.5"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.38.5",
-    "h3": "^1.8.2",
-    "twilio": "^4.19.0"
+    "@supabase/supabase-js": "^2.39.0",
+    "h3": "^1.9.0",
+    "twilio": "^4.19.3"
   }
 }

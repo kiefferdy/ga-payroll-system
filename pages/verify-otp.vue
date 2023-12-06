@@ -7,6 +7,14 @@
             <div v-show="invalidOtp" class="failure-message" role="alert">
                The OTP you have entered is invalid. Please try again.
             </div>
+            <!-- OTP Generic Error Notification -->
+            <div v-show="errorOtp" class="failure-message" role="alert">
+               Unable to verify the entered OTP. Please try again.
+            </div>
+            <!-- OTP Resend Error Notification -->
+            <div v-show="resendError" class="failure-message" role="alert">
+               Unable to send a new OTP. Please try again.
+            </div>
          </div>
       </div>
    </div>
@@ -83,8 +91,10 @@
    const otp3Element = ref(null);
    const otp4Element = ref(null);
 
-   // Ref for invalid OTP notif
+   // Ref for OTP notifs
    const invalidOtp = ref(false);
+   const errorOtp = ref(false);
+   const resendError = ref(false);
 
    // Cooldown for resend OTP
    const cooldown = ref(0);
@@ -116,8 +126,10 @@
 
          const data = await response.json();
          if (data.success) {
-            // Remove Invalid OTP notif
+            // Remove error notifs
             invalidOtp.value = false;
+            errorOtp.value = false;
+            resendError.value = false;
 
             // Get the current timestamp
             const currentTime = new Date().toISOString();
@@ -150,6 +162,7 @@
          }
       } catch (err) {
          console.error('Error submitting OTP:', err.message);
+         errorOtp.value = true;
       }
    };
 
@@ -189,6 +202,11 @@
          const currentTime = new Date().toISOString();
          console.log("Attempting to send OTP at time:", currentTime);
 
+         // Remove OTP error notifs
+         invalidOtp.value = false;
+         errorOtp.value = false;
+         resendError.value = false;
+
          // Check if employee is already timed-in
          const { data, error } = await supabase
             .from('Employees')
@@ -217,9 +235,11 @@
                      router.push('/verify-otp');
                   } else {
                      console.error('Error sending OTP:', otpResult.error);
+                     resendError.value = true;
                   }
                } catch (otpError) {
                   console.error('Failed to send OTP:', otpError);
+                  resendError.value = true;
                }
             } else {
                console.log("Cannot time-in because the user is already timed-in!");
