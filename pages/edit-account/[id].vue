@@ -83,7 +83,7 @@ async function handleEdit() {
       .update({
         first_name: firstName.value,
         last_name: lastName.value,
-        // TODO: have to fix email and password update w/o needing email verification
+        // TODO: have to fix email and password update
         email: email.value,
         password: password.value,
         needs_otp: needsOTP.value,
