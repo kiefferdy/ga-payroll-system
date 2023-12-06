@@ -399,7 +399,7 @@ saturday_total = (saturday_hrs * saturday_h_pay) + (saturday_mins * saturday_m_p
 
 weekTotal = monday_total + tuesday_total + wednesday_total + thursday_total + friday_total + saturday_total + adjfriday_total + adjsaturday_total;
 
-total_bal = weekTotal + parseFloat(bale) + parseFloat(advance) - parseFloat(deduction);
+total_bal = weekTotal - parseFloat(bale) + parseFloat(advance) - parseFloat(deduction);
 
 if(hasPay){
    
@@ -676,7 +676,7 @@ const logout = async () => {
                         <td class="w-16 text-right"><input class="w-10 bg-transparent" v-model="bale"></td>
                      </tr>
                      <tr>
-                        <th class="font-normal text-left">Sat Advance</th>
+                        <th class="font-normal text-left">Bonus</th>
                         <td class="w-16 text-right"><input class="w-10 bg-transparent" v-model="advance"></td>
                      </tr>
                      <tr class="border-b-2 border-dark_green">
