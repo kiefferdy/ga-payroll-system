@@ -1,5 +1,5 @@
 <template>
-   <Title>Create Account</Title>
+   <Title>Admin - Create Account</Title>
    <div class="card text-black flex justify-center h-[30rem] w-[35rem]">
       <h1 class="card-title mb-5">Create Account</h1>
       <div class="card card-side justify-between">

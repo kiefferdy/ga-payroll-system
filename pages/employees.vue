@@ -1,5 +1,5 @@
 <template>
-   <Title>Employees</Title>
+   <Title>Admin - Employees</Title>
    <div class="card card-side h-[37rem] w-[65rem] bg-dark_green text-black">
       <div class="card h-[37rem] w-[55rem] bg-primary_white rounded rounded-l-[1rem] rounded-tr-[0rem] rounded-br-[1rem]">
          <div class="card card-side  mx-10 mt-5 justify-between">
@@ -25,7 +25,7 @@
                </div>
             </div>
             <div v-else>
-               <p>No matching employees found.</p>
+               <p class="flex self-center justify-center">No matching employees found.</p>
             </div>
          </div>
       </div>

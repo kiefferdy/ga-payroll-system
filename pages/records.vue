@@ -456,7 +456,7 @@ const logout = async () => {
 </script>
 
 <template>
-   <Title>Records</Title>
+   <Title>Admin - Records</Title>
    <div class="card card-side h-[37rem] w-[65rem] bg-dark_green text-black">
       <div class="card h-[37rem] w-[55rem] bg-primary_white rounded-[1rem] rounded-br-[1rem]">
          <div class="card card-side justify-between mx-10 mt-5">
