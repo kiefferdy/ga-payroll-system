@@ -21,8 +21,8 @@
             <!-- Rank Selector -->
             <label class="label-text text-black mt-4 font-bold">Rank*<br></label>
             <select v-model="rank" class="input input-sm border-dark_green bg-primary_white rounded w-64">
-               <option value="Admin">Employee</option>
-               <option value="Employee">Admin</option>
+               <option value="Employee">Employee</option>
+               <option value="Admin">Admin</option>
                <option value="Developer">Developer</option>
             </select>
          </div>

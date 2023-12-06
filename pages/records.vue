@@ -2,6 +2,8 @@
 const user = useSupabaseUser();
 const supabase = useSupabaseClient();
 import { ref } from 'vue';
+import { useRouter } from 'vue-router';
+const router = useRouter();
 let monday = [];
 let tuesday = [];
 let wednesday = [];
@@ -452,6 +454,36 @@ const logout = async () => {
       router.push('/login');
    }
 };
+
+   // Verification check to see if user is an admin or developer before showing settings icon
+   const verifyUserRank = async () => {
+      const { data: { user } } = await supabase.auth.getUser();  // Get the current user
+
+      if (user) {
+         // Check if employee is an admin or developer
+         const { data, error } = await supabase
+            .from('Employees')
+            .select('rank')
+            .eq('id', user.id);
+
+         if (error) {
+            console.log("Error fetching data from Supabase:", error);
+            return;
+         } else if (data && data.length > 0) {
+            const userRole = data[0].rank;
+            if (!(userRole.toLowerCase() == 'admin' || userRole.toLowerCase() == 'developer')) {
+               alert('You do not have permission to view this page!');
+               router.push('/');
+            }
+         } else {
+            console.log("No data returned from Supabase.");
+         }
+      } else {
+         console.log("User is not logged in.");
+      }
+   }
+
+   verifyUserRank();
 
 </script>
 

@@ -75,7 +75,7 @@
             } else {
                console.log("Successfully deleted user from Supabase Auth:", result.data);
                alert("The user has been successfully deleted!");
-               router.push('/employees');
+               router.go();
             }
          }
       }

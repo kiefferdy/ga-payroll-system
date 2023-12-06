@@ -140,6 +140,15 @@
 
    // Function to update settings in Supabase
    const updateSettings = async () => {
+      if (!isValidEmail(otpEmail.value)) {
+         alert("Please enter a valid OTP email address.");
+         return;
+      }
+      if (!isValidPhoneNumber(otpPhone.value)) {
+         alert("Please enter a valid phone number.");
+         return;
+      }
+
       const updates = {
          otp_email: otpEmail.value,
          otp_phone: otpPhone.value,
@@ -168,6 +177,11 @@
 
    // Function to update user account credentials in Supabase Auth
    const updateCredentials = async () => {
+      if (!isValidEmail(accountEmail.value)) {
+         alert("Please enter a valid email address.");
+         return;
+      }
+
       const { data, error } = await supabase.auth.updateUser({
          email: accountEmail.value,
          password: password.value
@@ -185,6 +199,16 @@
          setTimeout(() => updateAccountSuccess.value = false, 10000); // Hides notif after 10 seconds
       }
    };
+
+   function isValidEmail(email) {
+      const regex = /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/;
+      return regex.test(email);
+   }
+
+   function isValidPhoneNumber(phoneNumber) {
+      const regex = /^\+[1-9]\d{1,14}$/;
+      return regex.test(phoneNumber);
+   }
 
    // Verification check to see if user is an admin or developer before showing settings icon
    const verifyUserRank = async () => {
