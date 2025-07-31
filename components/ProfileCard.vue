@@ -17,7 +17,7 @@
             <NuxtLink :to="`/edit-account/${employee.id}`">
                <button class="btn btn-info btn-sm me-2"><img src="~/assets/icons/edit.png" class="w-4"></button>
             </NuxtLink>
-            <button @click="handleDelete" class="btn btn-error btn-sm"><img src="~/assets/icons/delete.png" class="w-4"></button>
+            <button v-if="isAdmin" @click="handleDelete" class="btn btn-error btn-sm"><img src="~/assets/icons/delete.png" class="w-4"></button>
          </div>         
       </div>
    </div>
@@ -25,6 +25,7 @@
 
 <script setup>
 
+   import { ref } from 'vue';
    import { useRouter } from 'vue-router';
 
    const supabase = useSupabaseClient();
@@ -33,6 +34,9 @@
    const props = defineProps({
       employee: Object
    });
+
+   // Track if current user is an admin
+   const isAdmin = ref(false);
 
    const formatTime = (time) => {
       const formattedTime = new Date(time);
@@ -81,12 +85,12 @@
       }
    }
 
-   // Verification check to see if user is an admin or developer before showing settings icon
+   // Verification check to determine user permissions
    const verifyUserRank = async () => {
       const { data: { user } } = await supabase.auth.getUser();  // Get the current user
 
       if (user) {
-         // Check if employee is an admin or developer
+         // Check if employee is an admin, manager, or other
          const { data, error } = await supabase
             .from('Employees')
             .select('rank')
@@ -97,9 +101,17 @@
             return;
          } else if (data && data.length > 0) {
             const userRole = data[0].rank;
-            if (!(userRole.toLowerCase() == 'admin' || userRole.toLowerCase() == 'developer')) {
+            
+            // Check if user has permission to access this page (admin or manager)
+            if (!(userRole.toLowerCase() == 'admin' || userRole.toLowerCase() == 'manager')) {
                alert('You do not have permission to view this page!');
                router.push('/');
+               return;
+            }
+            
+            // Set admin status (only admins can delete users)
+            if (userRole.toLowerCase() == 'admin') {
+               isAdmin.value = true;
             }
          } else {
             console.log("No data returned from Supabase.");

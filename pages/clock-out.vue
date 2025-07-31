@@ -210,15 +210,15 @@
             }
          };
 
-         // True if user is an admin or developer
+         // True if user is an admin or manager
          const userIsAdmin = ref(false);
 
-         // Verification check to see if user is an admin or developer before showing settings icon
+         // Verification check to see if user is an admin or manager before showing settings icon
          const verifyUserRank = async () => {
             const { data: { user } } = await supabase.auth.getUser();  // Get the current user
 
             if (user) {
-               // Check if employee is an admin or developer
+               // Check if employee is an admin or manager
                const { data, error } = await supabase
                   .from('Employees')
                   .select('rank')
@@ -229,7 +229,7 @@
                   return;
                } else if (data && data.length > 0) {
                   const userRole = data[0].rank;
-                  if (userRole.toLowerCase() == 'admin' || userRole.toLowerCase() == 'developer') {
+                  if (userRole.toLowerCase() == 'admin' || userRole.toLowerCase() == 'manager') {
                      userIsAdmin.value = true;
                   }
                } else {
@@ -247,7 +247,7 @@
             if (userIsAdmin.value) {
                router.push('/settings');
             } else {
-               console.log("Access denied. User is not an admin or developer.");
+               console.log("Access denied. User is not an admin or manager.");
             }
          };
 

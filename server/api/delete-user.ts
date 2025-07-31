@@ -32,7 +32,7 @@ async function authenticateUser(userId: string) {
 
         if (error) throw error;
 
-        if (data.rank === 'Admin' || data.rank === 'Developer') {
+        if (data.rank === 'Admin' || data.rank === 'Manager') {
             return true;
         }
         return false;

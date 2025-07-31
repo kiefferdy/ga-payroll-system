@@ -185,12 +185,12 @@
       genericError.value = false;
    }
 
-   // Verification check to see if user is an admin or developer
+   // Verification check to see if user is an admin or manager
    const verifyUserRank = async () => {
       const { data: { user } } = await supabase.auth.getUser();  // Get the current user
 
       if (user) {
-         // Check if employee is an admin or developer
+         // Check if employee is an admin or manager
          const { data, error } = await supabase
             .from('Employees')
             .select('rank')
@@ -201,7 +201,7 @@
             return;
          } else if (data && data.length > 0) {
             const userRole = data[0].rank;
-            if (!(userRole.toLowerCase() == 'admin' || userRole.toLowerCase() == 'developer')) {
+            if (!(userRole.toLowerCase() == 'admin' || userRole.toLowerCase() == 'manager')) {
                alert('You do not have permission to view this page!');
                router.push('/');
             }
