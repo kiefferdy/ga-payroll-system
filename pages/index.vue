@@ -26,7 +26,7 @@
  
 <script>
 
-   import { ref } from 'vue';
+   import { ref, onMounted } from 'vue';
    import { useRouter } from 'vue-router';
 
    export default {
@@ -337,7 +337,11 @@
          verifyUserRank(); // Only shows the settings icon if user is an admin or dev
          checkTimeInStatus(); // Redirect user to clock-out page if user is currently timed-in
          updateTimeAndGreeting(); // Get current time and appropriate greeting
-         setInterval(updateTimeAndGreeting, 60000); // Update time and greeting every minute
+         
+         // Set up interval only on client-side
+         onMounted(() => {
+            setInterval(updateTimeAndGreeting, 60000); // Update time and greeting every minute
+         });
 
          return { currentTime, greeting, username, userIsAdmin, initializeTimeIn, logout, goToSettings };
       }
