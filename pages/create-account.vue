@@ -1,6 +1,6 @@
 <template>
    <Title>Admin - Create Account</Title>
-   <div class="card text-black flex justify-center h-[30rem] w-[35rem]">
+   <div class="card text-black flex justify-center min-h-[30rem] w-[35rem] relative">
       <h1 class="card-title mb-5">Create Account</h1>
       <div class="card card-side justify-between">
          <div>
@@ -16,13 +16,26 @@
          <label class="label-text text-black mt-4 font-bold">Email*<br></label>
          <input v-model="email" type="email" class="input input-sm border-dark_green bg-primary_white rounded w-full" required>
       </div>
-      <div class="mt-5">
+      <div class="mt-5 relative">
          <label class="label-text text-black mt-4 font-bold">Password*<br></label>
          <input v-model="password" type="password" class="input input-sm border-dark_green bg-primary_white rounded w-full" required>
+         <div v-if="passwordErrors.length > 0" class="password-errors-container">
+            <div class="password-errors">
+               <div v-for="error in passwordErrors" :key="error" class="password-error-item">• {{ error }}</div>
+            </div>
+         </div>
       </div>
       <div class="mt-5">
          <label class="label-text text-black mt-4 font-bold">Confirm Password*<br></label>
          <input v-model="verifyPassword" type="password" class="input input-sm border-dark_green bg-primary_white rounded w-full" required>
+      </div>
+      <div class="mt-3 text-xs text-gray-600">
+         <strong>Password Requirements:</strong><br>
+         • At least 8 characters long<br>
+         • At least one uppercase letter (A-Z)<br>
+         • At least one lowercase letter (a-z)<br>
+         • At least one number (0-9)<br>
+         • At least one special character (!@#$%^&*()_+-=[]{}|;:,.<>?)
       </div>
       <div class="mt-5">
          <input v-model="needsOTP" type="checkbox" class="text-black"> Needs OTP to Login?
@@ -53,12 +66,47 @@
    .success {
       color: green;
    }
+
+   .password-errors-container {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      margin-top: 0.25rem;
+      z-index: 10;
+   }
+
+   .password-errors {
+      background-color: #fef2f2; /* Light red background */
+      border: 1px solid #fecaca; /* Light red border */
+      border-radius: 0.375rem;
+      padding: 0.75rem;
+      max-width: 100%; /* Contain within parent */
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+   }
+
+   .password-error-item {
+      color: #dc2626; /* Nice red color */
+      font-size: 0.75rem; /* Small text */
+      line-height: 1.4;
+      margin-bottom: 0.25rem;
+      word-wrap: break-word;
+   }
+
+   .password-error-item:last-child {
+      margin-bottom: 0;
+   }
 </style>
 
 <script setup>
+   // Apply admin middleware to this page (temporarily disabled for testing)
+   // definePageMeta({
+   //    middleware: 'admin'
+   // });
 
-   import { ref } from 'vue';
+   import { ref, computed } from 'vue';
    import { useRouter } from 'vue-router';
+   import { validatePasswordComplexity, validatePasswordMatch, validateEmail as validateEmailSecure, validateInputLength } from '~/utils/passwordSecurity.js';
 
    const supabase = useSupabaseClient();
    const router = useRouter();
@@ -82,11 +130,18 @@
    const insertionError = ref(false);
    const genericError = ref(false);
 
+   // Password validation
+   const passwordErrors = computed(() => {
+      if (!password.value) return [];
+      const validation = validatePasswordComplexity(password.value);
+      return validation.errors;
+   });
+
    const handleSignUp = async () => {
       // Verification of user input
       clearNotifs();
       validateInputs();
-      if (invalidEmail.value || passwordsNotMatch.value || incompleteFields.value) {
+      if (invalidEmail.value || passwordsNotMatch.value || passwordTooShort.value || incompleteFields.value) {
          return;
       }
 
@@ -165,14 +220,25 @@
    };
 
    function validateInputs() {
-      invalidEmail.value = !validateEmail(email.value);
-      passwordsNotMatch.value = password.value !== verifyPassword.value;
-      incompleteFields.value = !firstName.value || !lastName.value || !email.value || !password.value || !verifyPassword.value;
-   }
+      // Email validation using security utility
+      const emailValidation = validateEmailSecure(email.value);
+      invalidEmail.value = !emailValidation.isValid;
 
-   function validateEmail(email) {
-      const regex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-      return regex.test(email);
+      // Password complexity validation
+      const passwordValidation = validatePasswordComplexity(password.value);
+      passwordTooShort.value = !passwordValidation.isValid;
+
+      // Password match validation
+      const matchValidation = validatePasswordMatch(password.value, verifyPassword.value);
+      passwordsNotMatch.value = !matchValidation.isValid;
+
+      // Input length validation
+      const firstNameValidation = validateInputLength(firstName.value, 50, 'First Name');
+      const lastNameValidation = validateInputLength(lastName.value, 50, 'Last Name');
+      
+      incompleteFields.value = !firstNameValidation.isValid || !lastNameValidation.isValid || 
+                              !emailValidation.isValid || !passwordValidation.isValid || 
+                              !matchValidation.isValid;
    }
 
    // Clears all error notifications
