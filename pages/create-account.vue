@@ -31,7 +31,7 @@
       </div>
       <div class="mt-3 text-xs text-gray-600">
          <strong>Password Requirements:</strong><br>
-         • At least 8 characters long<br>
+         • At least 12 characters long<br>
          • At least one uppercase letter (A-Z)<br>
          • At least one lowercase letter (a-z)<br>
          • At least one number (0-9)<br>
@@ -99,10 +99,10 @@
 </style>
 
 <script setup>
-   // Apply admin middleware to this page (temporarily disabled for testing)
-   // definePageMeta({
-   //    middleware: 'admin'
-   // });
+   // Apply admin middleware to this page - only admins can create accounts
+   definePageMeta({
+      middleware: 'admin'
+   });
 
    import { ref, computed } from 'vue';
    import { useRouter } from 'vue-router';

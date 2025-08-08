@@ -1,4 +1,9 @@
 <script setup>
+// Apply manager middleware to this page - records should be accessible by managers and admins
+definePageMeta({
+   middleware: 'manager'
+});
+
 const user = useSupabaseUser();
 const supabase = useSupabaseClient();
 import { ref } from 'vue';

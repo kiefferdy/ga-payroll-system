@@ -1,32 +1,52 @@
 <template>
    <Title>Green Atwork - Login</Title>
-   <div class="card card-side min-h-[30rem] w-[60rem] relative">
-      <div class="card-body relative">
-         <div class="login-form">
-            <h1 class="card-title text-black">Account Login</h1>
+   <div class="min-h-screen flex items-center justify-center px-4 py-8">
+      <div class="card card-side min-h-[30rem] w-full max-w-5xl relative">
+         <div class="card-body relative p-8">
+            <div class="login-form space-y-4">
+               <h1 class="card-title text-black text-2xl mb-6">Account Login</h1>
 
-            <label class="label-text text-black mt-4">Email</label>
-            <input v-model="email" type="text" class="input-s border-2 border-primary_green bg-primary_white rounded w-72 text-black" required>
+               <div class="form-control">
+                  <label class="label-text text-black mb-2 block">Email</label>
+                  <input v-model="email" type="text" class="input-s border-2 border-primary_green bg-primary_white rounded w-full max-w-sm p-3 text-black" required>
+               </div>
+               
+               <div class="form-control">
+                  <label class="label-text text-black mb-2 block">Password</label>
+                  <input :type="passwordFieldType" v-model="password" class="input-s border-2 border-primary_green bg-primary_white rounded w-full max-w-sm p-3 text-black" required>
+               </div>
+               
+               <div class="form-control">
+                  <label class="text-black flex items-center cursor-pointer">
+                     <input @click="hidePassword = !hidePassword" type="checkbox" class="mr-2"> 
+                     <span>Show Password</span>
+                  </label>
+               </div>
+               
+               <div class="card-actions mt-6">
+                  <button @click="signIn" :disabled="isLoading" class="btn btn-sm rounded-full text-white bg-button_green hover:bg-green-700 px-8 py-2">
+                     <span v-if="isLoading">Logging in...</span>
+                     <span v-else>Login</span>
+                  </button>
+               </div>
+               
+               <div class="mt-4">
+                  <NuxtLink to="/password-reset" class="text-sm text-blue-600 hover:text-blue-800 underline">
+                     Forgot your password?
+                  </NuxtLink>
+               </div>
+            </div>
             
-            <label class="label-text text-black mt-4">Password</label>
-            <input :type="passwordFieldType" v-model="password" class="input-s border-2 border-primary_green bg-primary_white rounded w-72 text-black" required>
-            
-            <div class="text-black"><input @click="hidePassword = !hidePassword" type="checkbox"> Show Password</div>
-            <div class="card-actions">
-               <button @click="signIn" :disabled="isLoading" class="btn btn-xs mt-3 rounded-full text-white bg-button_green btn-ghost w-24">
-                  <span v-if="isLoading">Logging in...</span>
-                  <span v-else>Login</span>
-               </button>
+            <div v-if="wrong" class="error-container">
+               <div class="error-message">{{ errorMessage || 'Invalid username and/or password' }}</div>
             </div>
          </div>
-         <div v-if="wrong" class="error-container">
-            <div class="error-message">{{ errorMessage || 'Invalid username and/or password' }}</div>
-         </div>
+         <div class="divider divider-horizontal"></div>
+         <figure class="flex-shrink-0 p-8">
+            <img src="~assets/images/logo.png" class="w-80 max-w-full h-auto">
+         </figure>
       </div>
-      <div class="divider divider-horizontal"></div>
-      <figure><img src="~assets/images/logo.png" class="w-80"></figure>
    </div>
-
 </template>
 
 <style scoped>
@@ -39,9 +59,9 @@
    }
    
    .error-message {
-      color: #dc2626; /* Nice red color */
-      background-color: #fef2f2; /* Light red background */
-      border: 1px solid #fecaca; /* Light red border */
+      color: #dc2626;
+      background-color: #fef2f2;
+      border: 1px solid #fecaca;
       padding: 0.75rem;
       border-radius: 0.375rem;
       font-size: 0.875rem;

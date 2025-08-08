@@ -7,6 +7,12 @@
             <img src="~/assets/icons/settings.png" alt="Settings" class="w-6 h-6"> <!-- Adjust the path and size as needed -->
          </button>
       </div>
+      <!-- Profile Button -->
+      <div class="absolute top-2 left-16">
+         <button @click="goToProfile" class="text-black hover:text-gray-600 font-medium">
+            Profile
+         </button>
+      </div>
       <div class="flex flex-row self-end">
          <p class="mr-4 ">Status:</p>
          <div class="bg-clock_out_red rounded-full w-2.5 h-2.5 mx-1 mt-2"></div>
@@ -25,6 +31,10 @@
 </template>
  
 <script>
+   // Apply employee middleware to this page - main dashboard should be accessible by employees
+   definePageMeta({
+      middleware: 'employee'
+   });
 
    import { ref, onMounted } from 'vue';
    import { useRouter } from 'vue-router';
@@ -332,6 +342,11 @@
             }
          };
 
+         // Profile link
+         const goToProfile = () => {
+            router.push('/Profile');
+         };
+
          // Functions to be run once page loads
          fetchCurrentUser(); // Fetches the currently signed-in user
          verifyUserRank(); // Only shows the settings icon if user is an admin or dev
@@ -343,7 +358,7 @@
             setInterval(updateTimeAndGreeting, 60000); // Update time and greeting every minute
          });
 
-         return { currentTime, greeting, username, userIsAdmin, initializeTimeIn, logout, goToSettings };
+         return { currentTime, greeting, username, userIsAdmin, initializeTimeIn, logout, goToSettings, goToProfile };
       }
    };
 

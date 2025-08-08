@@ -67,6 +67,10 @@
  </style>
  
 <script setup>
+   // Apply admin middleware to this page - only admins can edit accounts
+   definePageMeta({
+      middleware: 'admin'
+   });
 
    import { ref } from 'vue';
    import { useRouter } from 'vue-router';

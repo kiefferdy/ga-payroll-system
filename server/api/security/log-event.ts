@@ -35,8 +35,8 @@ export default defineEventHandler(async (event) => {
   }
 
   // Initialize Supabase client
-  const supabaseUrl = process.env.SUPABASE_URL;
-  const supabaseServiceKey = process.env.SUPABASE_BYPASS_KEY;
+  const supabaseUrl = useRuntimeConfig().public.supabase.url;
+  const supabaseServiceKey = useRuntimeConfig().supabaseBypassKey;
   
   if (!supabaseUrl || !supabaseServiceKey) {
     throw createError({
@@ -52,16 +52,19 @@ export default defineEventHandler(async (event) => {
     const clientIP = getHeader(event, 'x-forwarded-for') || getHeader(event, 'x-real-ip') || 'unknown';
     const userAgent = getHeader(event, 'user-agent') || '';
 
-    // Log the security event using the database function
-    const { error } = await supabase.rpc('log_security_event', {
-      p_user_id: userId,
-      p_event_type: eventType,
-      p_description: description,
-      p_ip_address: clientIP,
-      p_user_agent: userAgent,
-      p_severity: severity,
-      p_metadata: null
-    });
+    // Log the security event directly to the security_events table
+    const { error } = await supabase
+      .from('security_events')
+      .insert({
+        user_id: userId,
+        event_type: eventType,
+        event_description: description,
+        ip_address: clientIP,
+        user_agent: userAgent,
+        severity: severity,
+        metadata: null,
+        created_at: new Date().toISOString()
+      });
 
     if (error) {
       console.error('Error logging security event:', error);

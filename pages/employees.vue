@@ -43,6 +43,10 @@
 </template>
 
 <script setup>
+   // Apply admin middleware to this page - only admins can manage employees
+   definePageMeta({
+      middleware: 'admin'
+   });
 
    import { useRouter } from 'vue-router';
 

@@ -1,8 +1,8 @@
 /**
- * Admin Authorization Middleware
+ * Developer Authorization Middleware
  * Implements CSSECDV requirement 2.2: Access controls should fail securely
- * Only allows access to users with Admin, Developer, or Website Administrator roles
- * Enhanced with server-side verification and secure role checking
+ * Only allows access to users with Developer role (highest privilege level)
+ * Used for system configuration, database management, security settings, etc.
  */
 
 /**
@@ -42,7 +42,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
 
   // Ensure user is authenticated first (should be handled by global auth middleware)
   if (!verifiedUser || !verifiedEmployee) {
-    await logSecurityEvent(null, 'unauthorized_admin_access', `Unauthorized access attempt to ${to.path}`, 'high');
+    await logSecurityEvent(null, 'unauthorized_developer_access', `Unauthorized access attempt to ${to.path}`, 'critical');
     throw createError({
       statusCode: 401,
       statusMessage: 'Authentication required'
@@ -50,31 +50,30 @@ export default defineNuxtRouteMiddleware(async (to) => {
   }
 
   try {
-    // Check if user has admin privileges (check both rank and account_type)
-    const adminRoles = ['Admin', 'Developer', 'Website Administrator'];
-    const hasAdminAccess = adminRoles.includes(verifiedEmployee.rank) || 
-                          adminRoles.includes(verifiedEmployee.account_type);
+    // Only developers have access to developer-level features (check both rank and account_type)
+    const hasDeveloperAccess = verifiedEmployee.rank === 'Developer' || 
+                               verifiedEmployee.account_type === 'Developer';
 
-    if (!hasAdminAccess) {
-      // Log unauthorized access attempt
+    if (!hasDeveloperAccess) {
+      // Log unauthorized access attempt - this is critical as someone is trying to access dev features
       await logSecurityEvent(
         verifiedUser.id, 
-        'unauthorized_admin_access', 
-        `User with rank ${verifiedEmployee.rank}/${verifiedEmployee.account_type} attempted to access admin route: ${to.path}`,
-        'high'
+        'unauthorized_developer_access', 
+        `User with rank ${verifiedEmployee.rank}/${verifiedEmployee.account_type} attempted to access developer route: ${to.path}`,
+        'critical'
       );
       
       throw createError({
         statusCode: 403,
-        statusMessage: 'Insufficient privileges. Access denied.'
+        statusMessage: 'Insufficient privileges. Developer access required.'
       });
     }
 
-    // Log successful admin access
+    // Log successful developer access
     await logSecurityEvent(
       verifiedUser.id, 
-      'admin_access_granted', 
-      `Admin access granted to ${verifiedEmployee.rank}/${verifiedEmployee.account_type} for route: ${to.path}`,
+      'developer_access_granted', 
+      `Developer access granted for route: ${to.path}`,
       'low'
     );
 
@@ -87,8 +86,8 @@ export default defineNuxtRouteMiddleware(async (to) => {
     // Log unexpected error
     await logSecurityEvent(
       verifiedUser?.id, 
-      'admin_middleware_error', 
-      `Unexpected error in admin middleware: ${error.message}`, 
+      'developer_middleware_error', 
+      `Unexpected error in developer middleware: ${error.message}`, 
       'critical'
     );
     

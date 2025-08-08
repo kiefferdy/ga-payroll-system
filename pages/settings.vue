@@ -91,6 +91,11 @@
 </style>
 
 <script setup>
+   // Apply admin middleware to this page - settings should be admin-only
+   definePageMeta({
+      middleware: 'admin'
+   });
+
    import { ref } from 'vue';
    import { useRouter } from 'vue-router';
 

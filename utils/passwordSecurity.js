@@ -5,7 +5,7 @@
 
 /**
  * Validates password complexity according to CSSECDV requirements:
- * - At least 8 characters long
+ * - At least 12 characters long (enhanced security)
  * - Contains uppercase letter
  * - Contains lowercase letter  
  * - Contains at least one number
@@ -21,9 +21,9 @@ export function validatePasswordComplexity(password) {
     return { isValid: false, errors };
   }
 
-  // Length requirement (minimum 8 characters)
-  if (password.length < 8) {
-    errors.push('Password must be at least 8 characters long');
+  // Length requirement (minimum 12 characters for enhanced security)
+  if (password.length < 12) {
+    errors.push('Password must be at least 12 characters long');
   }
 
   // Maximum length for security (prevent DoS attacks)
