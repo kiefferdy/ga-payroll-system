@@ -12,7 +12,7 @@
             <input type="checkbox" id="show-password" @click="hidePassword = !hidePassword" class="mr-2" />
             <label for="show-password">Show Password</label>
          </div>
-         <button @click="updateCredentials" class="btn bg-dark_green text-white rounded-full capitalize w-full mt-5">Update Credentials</button>
+         <button @click="initiatePasswordUpdate" class="btn bg-dark_green text-white rounded-full capitalize w-full mt-5">Update Credentials</button>
 
          <!-- Success Notification -->
          <div v-if="updateAccountSuccess" class="success-message mt-5" role="alert">
@@ -68,6 +68,14 @@
          </div>
       </ul>
    </div>
+
+   <!-- Re-authentication Modal -->
+   <ReAuthModal 
+      :show-modal="showReAuthModal"
+      :operation="currentOperation"
+      @authenticated="handleReAuthentication"
+      @cancelled="cancelReAuthentication"
+   />
 </template>
 
 <style scoped>
@@ -93,6 +101,13 @@
 <script setup>
    import { ref } from 'vue';
    import { useRouter } from 'vue-router';
+   import { 
+      checkUserAuthorization, 
+      logSecurityEvent, 
+      validatePasswordComplexity,
+      validateEmail as validateEmailUtil,
+      logAuthenticationAttempt
+   } from '~/utils/security';
 
    const supabase = useSupabaseClient();
    const router = useRouter();
@@ -120,6 +135,11 @@
    const updateFailure = ref(false);
    const updateAccountSuccess = ref(false);
    const updateAccountFailure = ref(false);
+
+   // Re-authentication modal
+   const showReAuthModal = ref(false);
+   const currentOperation = ref('');
+   const pendingCredentials = ref({});
 
    // Function to fetch settings from Supabase
    const fetchSettings = async () => {
@@ -175,75 +195,166 @@
       }
    };
 
-   // Function to update user account credentials in Supabase Auth
-   const updateCredentials = async () => {
+   // Function to initiate password update with re-authentication
+   const initiatePasswordUpdate = async () => {
+      // Validate inputs first
       if (!isValidEmail(accountEmail.value)) {
          alert("Please enter a valid email address.");
          return;
       }
 
-      const { data, error } = await supabase.auth.updateUser({
+      // If password is being changed, validate complexity
+      if (password.value) {
+         const passwordValidation = validatePasswordComplexity(password.value);
+         if (!passwordValidation.valid) {
+            alert(`Password does not meet complexity requirements:\n${passwordValidation.errors.join('\n')}`);
+            return;
+         }
+      }
+
+      // Store pending credentials
+      pendingCredentials.value = {
          email: accountEmail.value,
          password: password.value
-      });
+      };
 
-      if (error) {
-         console.error('Error updating account credentials:', error);
-         updateAccountSuccess.value = false;
-         updateAccountFailure.value = true; // Display fail notif
-         setTimeout(() => updateAccountFailure.value = false, 5000); // Hides notif after 5 seconds
-      } else {
-         console.log('Account credentials successfully updated for current user:', data);
-         updateAccountSuccess.value = true; // Display success notif
-         updateAccountFailure.value = false;
-         setTimeout(() => updateAccountSuccess.value = false, 10000); // Hides notif after 10 seconds
-      }
+      // Show re-authentication modal
+      currentOperation.value = 'password/email change';
+      showReAuthModal.value = true;
    };
 
+   // Handle successful re-authentication
+   const handleReAuthentication = async (authData) => {
+      showReAuthModal.value = false;
+      
+      try {
+         const updates = {
+            email: pendingCredentials.value.email
+         };
+
+         // Only include password if it's being changed
+         if (pendingCredentials.value.password) {
+            updates.password = pendingCredentials.value.password;
+         }
+
+         const { error } = await supabase.auth.updateUser(updates);
+
+         if (error) {
+            // Log credential update failure
+            await logSecurityEvent({
+               eventType: 'CREDENTIAL_UPDATE_FAILED',
+               userId: authData.userId,
+               userEmail: authData.email,
+               details: { 
+                  operation: 'credential update',
+                  error: error.message,
+                  newEmail: pendingCredentials.value.email
+               },
+               severity: 'HIGH'
+            });
+
+            console.error('Error updating account credentials:', error);
+            updateAccountSuccess.value = false;
+            updateAccountFailure.value = true;
+            setTimeout(() => updateAccountFailure.value = false, 5000);
+         } else {
+            // Log successful credential update
+            await logSecurityEvent({
+               eventType: 'CREDENTIALS_UPDATED',
+               userId: authData.userId,
+               userEmail: authData.email,
+               details: { 
+                  operation: 'credential update',
+                  newEmail: pendingCredentials.value.email,
+                  passwordChanged: !!pendingCredentials.value.password
+               },
+               severity: 'LOW'
+            });
+
+            console.log('Account credentials successfully updated');
+            updateAccountSuccess.value = true;
+            updateAccountFailure.value = false;
+            
+            // Clear password field for security
+            password.value = '';
+            
+            setTimeout(() => updateAccountSuccess.value = false, 10000);
+         }
+      } catch (error) {
+         console.error('Error during credential update:', error);
+         updateAccountFailure.value = true;
+         setTimeout(() => updateAccountFailure.value = false, 5000);
+      }
+
+      // Clear pending credentials
+      pendingCredentials.value = {};
+   };
+
+   // Handle re-authentication cancellation
+   const cancelReAuthentication = () => {
+      showReAuthModal.value = false;
+      pendingCredentials.value = {};
+   };
+
+   // Enhanced validation functions using centralized utilities
    function isValidEmail(email) {
-      const regex = /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/;
-      return regex.test(email);
+      return validateEmailUtil(email);
    }
 
    function isValidPhoneNumber(phoneNumber) {
+      // Enhanced phone number validation - E.164 format
       const regex = /^\+[1-9]\d{1,14}$/;
-      return regex.test(phoneNumber);
+      return regex.test(phoneNumber) && phoneNumber.length >= 8 && phoneNumber.length <= 16;
    }
 
-   // Verification check to see if user is an admin or developer before showing settings icon
+   // Enhanced user authorization check
    const verifyUserRank = async () => {
-      const { data: { user } } = await supabase.auth.getUser();  // Get the current user
+      const { data: { user } } = await supabase.auth.getUser();
 
-      if (user) {
-         // Check if employee is an admin or developer
-         const { data, error } = await supabase
-            .from('Employees')
-            .select('rank')
-            .eq('id', user.id);
+      if (!user) {
+         await logSecurityEvent({
+            eventType: 'UNAUTHORIZED_PAGE_ACCESS',
+            resourceAccessed: '/settings',
+            details: { reason: 'No authenticated user' },
+            severity: 'HIGH'
+         });
+         router.push('/login');
+         return;
+      }
 
-         if (error) {
-            console.log("Error fetching data from Supabase:", error);
-            return;
-         } else if (data && data.length > 0) {
-            const userRole = data[0].rank;
-            if (!(userRole.toLowerCase() == 'admin' || userRole.toLowerCase() == 'developer')) {
-               alert('You do not have permission to view this page!');
-               router.push('/');
-            }
-         } else {
-            console.log("No data returned from Supabase.");
-         }
-      } else {
-         console.log("User is not logged in.");
+      const authCheck = await checkUserAuthorization(user.id, ['Admin', 'Developer']);
+      if (!authCheck.authorized) {
+         alert('You do not have permission to view this page!');
+         router.push('/');
       }
    }
 
-   // Logout function
+   // Enhanced logout function with security logging
    const logout = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      
       const { error } = await supabase.auth.signOut();
       if (error) {
          console.error("Error logging out:", error);
+         
+         // Log logout failure
+         await logSecurityEvent({
+            eventType: 'LOGOUT_FAILED',
+            userId: user?.id,
+            userEmail: user?.email,
+            details: { error: error.message },
+            severity: 'MEDIUM'
+         });
       } else {
+         // Log successful logout
+         await logAuthenticationAttempt(
+            'LOGOUT',
+            user?.email || 'unknown',
+            user?.id,
+            undefined,
+            navigator.userAgent
+         );
+         
          router.push('/login');
       }
    };

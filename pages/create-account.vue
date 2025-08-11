@@ -18,7 +18,23 @@
       </div>
       <div class="mt-5">
          <label class="label-text text-black mt-4 font-bold">Password*<br></label>
-         <input v-model="password" type="password" class="input input-sm border-dark_green bg-primary_white rounded w-full" required>
+         <input v-model="password" @input="validatePasswordOnChange" type="password" class="input input-sm border-dark_green bg-primary_white rounded w-full" required>
+         <!-- Password strength indicator -->
+         <div v-if="password" class="mt-2">
+            <div class="text-xs mb-1">Password Strength: 
+               <span :class="passwordStrengthClass">{{ passwordStrength }}</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-1">
+               <div :class="passwordProgressClass" :style="{ width: passwordProgressWidth }" class="h-1 rounded-full transition-all duration-300"></div>
+            </div>
+         </div>
+         <!-- Password requirements -->
+         <div v-if="password && passwordErrors.length > 0" class="mt-2">
+            <p class="text-xs text-gray-600 mb-1">Password must include:</p>
+            <ul class="text-xs">
+               <li v-for="error in passwordErrors" :key="error" class="text-red-500">• {{ error }}</li>
+            </ul>
+         </div>
       </div>
       <div class="mt-5">
          <label class="label-text text-black mt-4 font-bold">Confirm Password*<br></label>
@@ -37,7 +53,7 @@
       <div v-if="registerSuccess" class="mt-2 self-center success">Success!</div>
       <div v-if="invalidEmail" class="mt-2 self-center error">Please enter a valid email address.</div>
       <div v-if="passwordsNotMatch" class="mt-2 self-center error">The passwords do not match.</div>
-      <div v-if="passwordTooShort" class="mt-2 self-center error">The password should be at least 6 characters long.</div>
+      <div v-if="passwordComplexityError" class="mt-2 self-center error">Password does not meet complexity requirements.</div>
       <div v-if="incompleteFields" class="mt-2 self-center error">Please fill all fields before proceeding.</div>
       <div v-if="emailTaken" class="mt-2 self-center error">The entered email address is already taken.</div>
       <div v-if="insertionError" class="mt-2 self-center error">A database error occurred! Please try again.</div>
@@ -57,8 +73,15 @@
 
 <script setup>
 
-   import { ref } from 'vue';
+   import { ref, computed } from 'vue';
    import { useRouter } from 'vue-router';
+   import { 
+      checkUserAuthorization, 
+      validatePasswordComplexity, 
+      validateEmail, 
+      sanitizeInput,
+      logSecurityEvent
+   } from '~/utils/security';
 
    const supabase = useSupabaseClient();
    const router = useRouter();
@@ -71,28 +94,91 @@
    const verifyPassword = ref('');
    const needsOTP = ref(false);
 
+   // Password validation
+   const passwordErrors = ref([]);
+   const passwordStrength = ref('');
+
    // Notifs
    const loadingNotif = ref(false);
    const registerSuccess = ref(false);
    const invalidEmail = ref(false);
    const passwordsNotMatch = ref(false);
-   const passwordTooShort = ref(false);
+   const passwordComplexityError = ref(false);
    const incompleteFields = ref(false);
    const emailTaken = ref(false);
    const insertionError = ref(false);
    const genericError = ref(false);
 
+   // Password strength styling
+   const passwordStrengthClass = computed(() => {
+      switch (passwordStrength.value) {
+         case 'WEAK': return 'text-red-500';
+         case 'MEDIUM': return 'text-yellow-500';
+         case 'STRONG': return 'text-green-500';
+         default: return 'text-gray-500';
+      }
+   });
+
+   const passwordProgressClass = computed(() => {
+      switch (passwordStrength.value) {
+         case 'WEAK': return 'bg-red-500';
+         case 'MEDIUM': return 'bg-yellow-500';
+         case 'STRONG': return 'bg-green-500';
+         default: return 'bg-gray-300';
+      }
+   });
+
+   const passwordProgressWidth = computed(() => {
+      switch (passwordStrength.value) {
+         case 'WEAK': return '33%';
+         case 'MEDIUM': return '66%';
+         case 'STRONG': return '100%';
+         default: return '0%';
+      }
+   });
+
+   // Validate password as user types
+   function validatePasswordOnChange() {
+      if (password.value) {
+         const validation = validatePasswordComplexity(password.value);
+         passwordErrors.value = validation.errors;
+         passwordStrength.value = validation.strength;
+      } else {
+         passwordErrors.value = [];
+         passwordStrength.value = '';
+      }
+   }
+
    const handleSignUp = async () => {
       // Verification of user input
       clearNotifs();
-      validateInputs();
-      if (invalidEmail.value || passwordsNotMatch.value || incompleteFields.value) {
+      await validateInputs();
+      
+      if (invalidEmail.value || passwordsNotMatch.value || passwordComplexityError.value || incompleteFields.value) {
          return;
       }
 
       try {
-         const { data: { user } } = await supabase.auth.getUser();  // Get the user performing the action
-         console.log("Retrieved user:", user);
+         const { data: { user } } = await supabase.auth.getUser();
+         
+         if (!user) {
+            genericError.value = true;
+            return;
+         }
+
+         // Check authorization using centralized function
+         const authCheck = await checkUserAuthorization(user.id, ['Admin', 'Developer']);
+         if (!authCheck.authorized) {
+            genericError.value = true;
+            return;
+         }
+
+         loadingNotif.value = true;
+
+         // Sanitize inputs
+         const cleanEmail = sanitizeInput(email.value.toLowerCase(), 255);
+         const cleanFirstName = sanitizeInput(firstName.value, 100);
+         const cleanLastName = sanitizeInput(lastName.value, 100);
 
          // Sending create user request to server
          const response = await fetch('/api/create-user', {
@@ -101,7 +187,7 @@
                'Content-Type': 'application/json'
             },
             body: JSON.stringify({ 
-               email: email.value,
+               email: cleanEmail,
                password: password.value,
                userId: user.id
             })
@@ -111,11 +197,20 @@
          if (!(result.status >= 200 && result.status <= 299)) {
             if (result.body.error?.message.includes('A user with this email')) {
                emailTaken.value = true;
-               console.error(result.body.error.message);
-               return;
-            } else if (result.body.error?.message.includes('at least 6 characters')) {
-               passwordTooShort.value = true;
-               console.error(result.body.error.message);
+               
+               // Log account creation attempt with duplicate email
+               await logSecurityEvent({
+                  eventType: 'ACCOUNT_CREATION_FAILED',
+                  userId: user.id,
+                  userEmail: user.email,
+                  details: { 
+                     reason: 'Duplicate email',
+                     attemptedEmail: cleanEmail,
+                     performedBy: user.email
+                  },
+                  severity: 'MEDIUM'
+               });
+               
                return;
             } else {
                genericError.value = true;
@@ -124,92 +219,154 @@
             }
          }
 
-         // Assuming sign-up was successful and we have the user's UUID
-         console.log(result);
-         loadingNotif.value = true;
-         const userId = result.body.data.user.id;
-         console.log('New user created:', userId);
+         const newUserId = result.body.data.user.id;
          clearNotifs();
 
          // Insert a new row in the Employees table for the new user
-         const { data: insertData, insertError } = await supabase
+         const { insertError } = await supabase
             .from('Employees')
             .insert([
                { 
-                  id: userId,
+                  id: newUserId,
                   rank: "Employee",
-                  first_name: firstName.value,
-                  last_name: lastName.value,
+                  first_name: cleanFirstName,
+                  last_name: cleanLastName,
                   requires_otp: needsOTP.value,
                   last_updated: new Date()
                }
             ]);
 
-            if (insertError) {
-               // If inserting user to "Employees" table fails
-               loadingNotif.value = false;
-               insertionError.value = true;
-               console.error('Error inserting into Employees table:', insertError);
-               return;
-            }
+         if (insertError) {
+            loadingNotif.value = false;
+            insertionError.value = true;
+            console.error('Error inserting into Employees table:', insertError);
+            
+            // Log database insertion error
+            await logSecurityEvent({
+               eventType: 'DATABASE_ERROR',
+               userId: user.id,
+               userEmail: user.email,
+               details: { 
+                  operation: 'Employee record creation',
+                  error: insertError.message,
+                  newUserId
+               },
+               severity: 'HIGH'
+            });
+            
+            return;
+         }
+
+         // Log successful account creation
+         await logSecurityEvent({
+            eventType: 'ACCOUNT_CREATED',
+            userId: user.id,
+            userEmail: user.email,
+            details: { 
+               newUserId,
+               newUserEmail: cleanEmail,
+               newUserName: `${cleanFirstName} ${cleanLastName}`,
+               requiresOTP: needsOTP.value,
+               createdBy: user.email
+            },
+            severity: 'LOW'
+         });
 
          loadingNotif.value = false;
          registerSuccess.value = true;
-         alert('Signed up successfully!');
+         alert('Account created successfully!');
          router.push('/employees');
+         
       } catch (err) {
          console.error(err);
          loadingNotif.value = false;
          genericError.value = true;
+         
+         // Log unexpected error
+         const { data: { user } } = await supabase.auth.getUser();
+         await logSecurityEvent({
+            eventType: 'ACCOUNT_CREATION_ERROR',
+            userId: user?.id,
+            userEmail: user?.email,
+            details: { 
+               error: err instanceof Error ? err.message : 'Unknown error'
+            },
+            severity: 'HIGH'
+         });
       }
    };
 
-   function validateInputs() {
+   async function validateInputs() {
+      // Validate email
       invalidEmail.value = !validateEmail(email.value);
+      
+      // Validate password match
       passwordsNotMatch.value = password.value !== verifyPassword.value;
-      incompleteFields.value = !firstName.value || !lastName.value || !email.value || !password.value || !verifyPassword.value;
-   }
+      
+      // Validate password complexity
+      const passwordValidation = validatePasswordComplexity(password.value);
+      passwordComplexityError.value = !passwordValidation.valid;
+      
+      // Check for incomplete fields
+      incompleteFields.value = !firstName.value.trim() || !lastName.value.trim() || 
+                               !email.value.trim() || !password.value || !verifyPassword.value;
 
-   function validateEmail(email) {
-      const regex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-      return regex.test(email);
+      // Log validation failures for security monitoring
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (invalidEmail.value) {
+         await logSecurityEvent({
+            eventType: 'INPUT_VALIDATION_FAILED',
+            userId: user?.id,
+            userEmail: user?.email,
+            details: { field: 'email', validationType: 'format', value: email.value.substring(0, 30) },
+            severity: 'LOW'
+         });
+      }
+      
+      if (passwordComplexityError.value) {
+         await logSecurityEvent({
+            eventType: 'INPUT_VALIDATION_FAILED',
+            userId: user?.id,
+            userEmail: user?.email,
+            details: { field: 'password', validationType: 'complexity', errors: passwordValidation.errors },
+            severity: 'MEDIUM'
+         });
+      }
    }
 
    // Clears all error notifications
    function clearNotifs() {
       invalidEmail.value = false;
       passwordsNotMatch.value = false;
-      passwordTooShort.value = false;
+      passwordComplexityError.value = false;
       incompleteFields.value = false;
       emailTaken.value = false;
+      insertionError.value = false;
       genericError.value = false;
+      registerSuccess.value = false;
+      loadingNotif.value = false;
    }
 
-   // Verification check to see if user is an admin or developer
+   // Enhanced user authorization check
    const verifyUserRank = async () => {
-      const { data: { user } } = await supabase.auth.getUser();  // Get the current user
+      const { data: { user } } = await supabase.auth.getUser();
 
-      if (user) {
-         // Check if employee is an admin or developer
-         const { data, error } = await supabase
-            .from('Employees')
-            .select('rank')
-            .eq('id', user.id);
+      if (!user) {
+         await logSecurityEvent({
+            eventType: 'UNAUTHORIZED_PAGE_ACCESS',
+            resourceAccessed: '/create-account',
+            details: { reason: 'No authenticated user' },
+            severity: 'HIGH'
+         });
+         router.push('/login');
+         return;
+      }
 
-         if (error) {
-            console.log("Error fetching data from Supabase:", error);
-            return;
-         } else if (data && data.length > 0) {
-            const userRole = data[0].rank;
-            if (!(userRole.toLowerCase() == 'admin' || userRole.toLowerCase() == 'developer')) {
-               alert('You do not have permission to view this page!');
-               router.push('/');
-            }
-         } else {
-            console.log("No data returned from Supabase.");
-         }
-      } else {
-         console.log("User is not logged in.");
+      const authCheck = await checkUserAuthorization(user.id, ['Admin', 'Developer']);
+      if (!authCheck.authorized) {
+         alert('You do not have permission to view this page!');
+         router.push('/');
       }
    }
 

@@ -12,8 +12,19 @@
          
          <div class="text-black"><input @click="hidePassword = !hidePassword" type="checkbox"> Show Password</div>
          <div class="card-actions">
-            <button @click="signIn" class="btn btn-xs mt-3 rounded-full text-white bg-button_green btn-ghost w-24">Login</button>
+            <button @click="signIn" :disabled="isLoading" class="btn btn-xs mt-3 rounded-full text-white bg-button_green btn-ghost w-24">
+               <span v-if="isLoading" class="loading loading-spinner loading-xs"></span>
+               <span v-else>Login</span>
+            </button>
          </div>
+         
+         <!-- Forgot Password Link -->
+         <div class="mt-2">
+            <NuxtLink to="/reset-password" class="text-sm text-primary_green hover:underline">
+               Forgot your password?
+            </NuxtLink>
+         </div>
+         
          <div v-if="wrong" class="error">Incorrect email or password</div>
       </div>
       <div class="divider divider-horizontal"></div>
@@ -31,6 +42,7 @@
 <script setup>
 
    import { useRouter } from 'vue-router';
+   import { logAuthenticationAttempt, validateEmail, sanitizeInput } from '~/utils/security';
 
    const router = useRouter();
    const supabase = useSupabaseClient();
@@ -39,57 +51,105 @@
    const hidePassword = ref(true);
    const password = ref("");
    const wrong = ref(false);
+   const isLoading = ref(false);
 
    const passwordFieldType = computed(() => hidePassword.value ? "password" : "text");
 
    async function signIn() {
+      if (isLoading.value) return;
+
+      // Input validation
+      if (!email.value.trim() || !password.value) {
+         wrong.value = true;
+         return;
+      }
+
+      // Validate email format
+      if (!validateEmail(email.value)) {
+         wrong.value = true;
+         return;
+      }
+
+      // Sanitize inputs
+      const cleanEmail = sanitizeInput(email.value.toLowerCase(), 255);
+      const cleanPassword = password.value;
+
+      isLoading.value = true;
 
       try {
          const { error } = await supabase.auth.signInWithPassword({
-            email: email.value,
-            password: password.value,
+            email: cleanEmail,
+            password: cleanPassword,
          });
 
          if (error) {
-            console.error("Sign in error:", error);
+            // Log failed authentication attempt
+            await logAuthenticationAttempt(
+               'LOGIN_FAILED',
+               cleanEmail,
+               undefined,
+               undefined,
+               navigator.userAgent,
+               { errorMessage: error.message }
+            );
+
             wrong.value = true;
-
+            
          } else {
-            wrong.value = false;
-
-            const { data: { user } } = await supabase.auth.getUser();  // Get the current user
-            console.log("Retrieved user:", user);
+            const { data: { user } } = await supabase.auth.getUser();
 
             if(user) {
+               // Log successful authentication
+               await logAuthenticationAttempt(
+                  'LOGIN_SUCCESS',
+                  user.email || cleanEmail,
+                  user.id,
+                  undefined,
+                  navigator.userAgent
+               );
+
+               wrong.value = false;
 
                const { data, error } = await supabase
                   .from('Employees')
-                  .select('time_in_status') // Checks whether the user is timed-in or not
+                  .select('time_in_status, first_name, last_name')
                   .eq('id', user.id);
 
                if(error) {
-                  console.log("Error fetching data from Supabase:", error);
+                  console.error("Error fetching employee data:", error);
                   router.push('/');
                } else if(data && data.length > 0) {
                   const timeInStatus = `${data[0].time_in_status}`;
                   if(timeInStatus == 'true') {
-                     router.push('/clock-out'); // Redirect to time-out page if user is timed-in
+                     router.push('/clock-out');
                   } else {
-                     router.push('/'); // Redirect to time-in page if user is timed-out
+                     router.push('/');
                   }
                } else {
-                  console.log("No data returned from Supabase.");
+                  console.error("Employee record not found for user");
                   router.push('/');
                }
-               
             } else {
-               console.log("Error fetching current user data.")
+               console.error("Failed to retrieve user data after login");
+               wrong.value = true;
             }
          }
 
       } catch (error) {
-         wrong.value = true
+         // Log authentication error
+         await logAuthenticationAttempt(
+            'LOGIN_FAILED',
+            cleanEmail,
+            undefined,
+            undefined,
+            navigator.userAgent,
+            { error: error instanceof Error ? error.message : 'Unknown error' }
+         );
+
+         wrong.value = true;
          console.error("Error signing in:", error);
+      } finally {
+         isLoading.value = false;
       }
    }
 
