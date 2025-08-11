@@ -1,0 +1,31 @@
+### Security Checklist
+- **Authentication**
+  - Require authentication for all pages and resources, except those specifically intended to be public
+  - All authentication controls should fail securely
+  - Only cryptographically strong one-way salted hashes of passwords are stored
+  - Authentication failure responses should not indicate which part of the authentication data was incorrect. For example, instead of "Invalid username" or "Invalid password", just use "Invalid username and/or password" for both
+  - Enforce password complexity requirements established by policy or regulation
+  - Enforce password length requirements established by policy or regulation
+  - Password entry should be obscured on the user's screen (use of dots or asterisks on the display)
+  - Enforce account disabling after an established number of invalid login attempts (e.g., five attempts is common). The account must be disabled for a period of time sufficient to discourage brute force guessing of credentials, but not so long as to allow for a denial-of-service attack to be performed
+  - Password reset questions should support sufficiently random answers. (e.g., "favorite book" is a bad question because “The Bible” is a very common answer)
+  - Prevent password re-use
+  - Passwords should be at least one day old before they can be changed, to prevent attacks on password re-use
+  - The last use (successful or unsuccessful) of a user account should be reported to the user at their next successful login
+  - Re-authenticate users prior to performing critical operations such as password change
+- **Authorization/Access Control**
+  - Use a single site-wide component to check access authorization
+  - Access controls should fail securely
+  - Enforce application logic flows to comply with business rules
+- **Data Validation**
+  - All validation failures should result in input rejection. Sanitizing should not be used
+  - Validate data range
+  - Validate data length
+- **Error Handling and Logging**
+  - Use error handlers that do not display debugging or stack trace information
+  - Implement generic error messages and use custom error pages
+  - Logging controls should support both success and failure of specified security events
+  - Restrict access to logs to only website administrators
+  - Log all input validation failures
+  - Log all authentication attempts, especially failures
+  - Log all access control failures
