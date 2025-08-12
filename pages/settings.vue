@@ -59,6 +59,7 @@
       <!-- Sidebar Menu -->
       <ul class="menu w-[10rem] p-0 font-bold text-white justify-between">
          <div>
+            <li class="py-2 items-center"><NuxtLink to="/">← Back</NuxtLink></li>
             <li class="py-2 items-center"><NuxtLink to="/employees">Employees</NuxtLink></li>
             <li class="py-2 items-center"><NuxtLink to="/records">Records</NuxtLink></li>
             <li class="active bg-primary_white rounded-r-[1rem] py-2 items-center text-black"><NuxtLink to="/settings">Settings</NuxtLink></li>         
