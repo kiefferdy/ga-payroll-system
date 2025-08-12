@@ -1,16 +1,5 @@
-import { defineEventHandler } from 'h3';
-import { createClient } from '@supabase/supabase-js';
-
-// Env variables for Supabase
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_BYPASS_KEY;
-
-// Verify that the required environment variables are set
-if (!supabaseUrl || !supabaseKey) {
-    throw new Error('Missing environment variables required for server API');
-}
-
-const supabase = createClient(supabaseUrl, supabaseKey);
+import { defineEventHandler, getHeaders } from 'h3';
+import { getUserFromRequest, getServiceRoleClient } from '../utils/supabase-clients';
 
 export default defineEventHandler(async (event) => {
     try {
@@ -28,16 +17,21 @@ export default defineEventHandler(async (event) => {
 
         // Get client IP if not provided
         const rawIP = ipAddress || getClientIP(event);
-        // Only set IP if it's a valid format, otherwise leave as null
         const clientIP = isValidIP(rawIP) ? rawIP : null;
 
-        // Insert security event log
-        const { error } = await supabase
+        // Get authenticated user context (if available)
+        const { user } = await getUserFromRequest(event);
+
+        // Get service role client for system logging
+        const supabase = getServiceRoleClient(event);
+
+        // Use service role client for system logging
+        const { error } = await (supabase as any)
             .from('SecurityLogs')
             .insert({
                 event_type: eventType,
-                user_id: userId,
-                user_email: userEmail,
+                user_id: userId || user?.id,
+                user_email: userEmail || user?.email,
                 ip_address: clientIP,
                 user_agent: userAgent || getHeaders(event)['user-agent'],
                 resource_accessed: resourceAccessed,

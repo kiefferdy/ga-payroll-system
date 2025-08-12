@@ -1,73 +1,75 @@
 import { defineEventHandler } from 'h3';
-import { createClient } from '@supabase/supabase-js';
+import { requireAdmin, getServiceRoleClient } from '../utils/supabase-clients';
 
-// Env variables for Supabase
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_BYPASS_KEY;
-
-// Verify that the required environment variables are set
-if (!supabaseUrl || !supabaseKey) {
-    throw new Error('Missing environment variables required for server API');
-}
-
-const supabase = createClient(supabaseUrl, supabaseKey);
-
-async function deleteUser(userId: string) {
+async function deleteUser(userId: string, event: any) {
     try {
+        const supabase = getServiceRoleClient(event);
         const { data, error } = await supabase.auth.admin.deleteUser(userId);
         return { data, error };
     } catch (error) {
-        console.error('Error in createUser:', error);
-        throw error;
-    }
-}
-
-async function authenticateUser(userId: string) {
-    try {
-        const { data, error } = await supabase
-            .from('Employees')
-            .select('rank')
-            .eq('id', userId)
-            .single();
-
-        if (error) throw error;
-
-        if (data.rank === 'Admin' || data.rank === 'Developer') {
-            return true;
-        }
-        return false;
-    } catch (error) {
-        console.error('Error checking user rank:', error);
-        return false;
+        console.error('Error in deleteUser:', error);
+        return { 
+            data: null, 
+            error: { message: 'User deletion failed - admin privileges may not be configured properly' }
+        };
     }
 }
 
 export default defineEventHandler(async (event) => {
     try {
-        // Parsing the incoming request to get the target user's UUID
         const body = await readBody(event);
-        const { targetId, userId } = body; // targetId is the UUID of the to-be-deleted user
+        const { targetId } = body; // targetId is the UUID of the to-be-deleted user
 
-        if (!userId) {
-            return { status: 403, body: 'User ID not found' };
-        } else {
-            const isAuthenticated = await authenticateUser(userId);
-            if (!isAuthenticated) {
-                return { status: 403, body: 'You do not have permission to perform this request' };
-            }
-        }
+        // Enforce admin authentication using RLS
+        const { role } = await requireAdmin(event);
 
         if (!targetId) {
             return { status: 400, body: 'Missing target user ID' };
         }
 
-        const response = await deleteUser(targetId);
+        const response = await deleteUser(targetId, event);
 
         if (response.error) {
+            // Log failed user deletion
+            await $fetch('/api/log-security-event', {
+                method: 'POST',
+                body: {
+                    eventType: 'USER_DELETE_FAILED',
+                    details: { 
+                        targetUserId: targetId,
+                        error: response.error.message,
+                        adminRole: role
+                    },
+                    severity: 'HIGH'
+                }
+            });
             return { status: 500, body: response };
         }
+
+        // Log successful user deletion
+        await $fetch('/api/log-security-event', {
+            method: 'POST',
+            body: {
+                eventType: 'USER_DELETED',
+                details: { 
+                    targetUserId: targetId,
+                    adminRole: role
+                },
+                severity: 'HIGH'
+            }
+        });
+
         return { status: 200, body: response };
     } catch (error) {
+        await $fetch('/api/log-security-event', {
+            method: 'POST',
+            body: {
+                eventType: 'API_ERROR',
+                resourceAccessed: '/api/delete-user',
+                details: { error: error instanceof Error ? error.message : 'Unknown error' },
+                severity: 'CRITICAL'
+            }
+        });
         return { status: 500, body: 'Internal Server Error' };
     }
 });

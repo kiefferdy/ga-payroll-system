@@ -1,15 +1,5 @@
 import { defineEventHandler } from 'h3';
-import { createClient } from '@supabase/supabase-js';
-
-// Env variables for Supabase
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_BYPASS_KEY;
-
-if (!supabaseUrl || !supabaseKey) {
-    throw new Error('Missing environment variables required for server API');
-}
-
-const supabase = createClient(supabaseUrl, supabaseKey);
+import { getServiceRoleClient } from '../utils/supabase-clients';
 
 export default defineEventHandler(async (event) => {
     try {
@@ -20,13 +10,14 @@ export default defineEventHandler(async (event) => {
             return { success: false, error: 'User ID is required' };
         }
 
-        // Update last login timestamp and reset failed attempts
-        const { error } = await supabase
+        // Use service role client for post-login system updates
+        const supabase = getServiceRoleClient(event);
+        const { error } = await (supabase as any)
             .from('Employees')
             .update({
                 last_login_at: new Date().toISOString(),
                 failed_login_attempts: 0,
-                locked_until: null // Clear any existing lockout
+                locked_until: null
             })
             .eq('id', userId);
 
@@ -35,19 +26,20 @@ export default defineEventHandler(async (event) => {
             return { success: false, error: 'Failed to update login data' };
         }
 
-        // Log successful login with reset information
-        await supabase
-            .from('SecurityLogs')
-            .insert({
-                event_type: 'LOGIN_SUCCESS_PROCESSED',
-                user_id: userId,
+        // Log successful login processing using RLS logging
+        await $fetch('/api/log-security-event', {
+            method: 'POST',
+            body: {
+                eventType: 'LOGIN_SUCCESS_PROCESSED',
+                userId,
                 details: {
                     last_login_updated: new Date().toISOString(),
                     failed_attempts_reset: true,
                     lockout_cleared: true
                 },
                 severity: 'LOW'
-            });
+            }
+        });
 
         return { success: true };
 

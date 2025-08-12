@@ -1,15 +1,5 @@
 import { defineEventHandler } from 'h3';
-import { createClient } from '@supabase/supabase-js';
-
-// Env variables for Supabase
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_BYPASS_KEY;
-
-if (!supabaseUrl || !supabaseKey) {
-    throw new Error('Missing environment variables required for server API');
-}
-
-const supabase = createClient(supabaseUrl, supabaseKey);
+import { getServiceRoleClient } from '../utils/supabase-clients';
 
 export default defineEventHandler(async (event) => {
     try {
@@ -20,23 +10,24 @@ export default defineEventHandler(async (event) => {
             return { error: 'Email is required' };
         }
 
-        // First get user ID from auth.users
-        const { data: authUser, error: authError } = await supabase
-            .from('auth.users')
+        // Get user ID from Employees table using email (service role - pre-auth check)
+        const supabase = getServiceRoleClient(event);
+        const { data: employeeData, error: employeeError } = await supabase
+            .from('Employees')
             .select('id')
             .eq('email', email)
             .single();
 
-        if (authError || !authUser) {
+        if (employeeError || !employeeData) {
             // Don't reveal if email exists - return unlocked status
             return { isLocked: false };
         }
 
-        // Check lockout status in Employees table
+        // Check lockout status in Employees table using service role client
         const { data, error } = await supabase
             .from('Employees')
             .select('failed_login_attempts, locked_until')
-            .eq('id', authUser.id)
+            .eq('id', employeeData.id)
             .single();
 
         if (error || !data) {
@@ -49,7 +40,7 @@ export default defineEventHandler(async (event) => {
         // Check if account is currently locked
         const isLocked = lockedUntil && lockedUntil > now;
 
-        // If lock period has expired, clear the lock
+        // If lock period has expired, clear the lock using service role client
         if (lockedUntil && lockedUntil <= now) {
             await supabase
                 .from('Employees')
@@ -57,7 +48,7 @@ export default defineEventHandler(async (event) => {
                     locked_until: null,
                     failed_login_attempts: 0
                 })
-                .eq('id', authUser.id);
+                .eq('id', employeeData.id);
 
             return {
                 isLocked: false,

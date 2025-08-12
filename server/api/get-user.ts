@@ -1,74 +1,89 @@
 import { defineEventHandler } from 'h3';
-import { createClient } from '@supabase/supabase-js';
+import { requireAdmin, getAuthenticatedClient } from '../utils/supabase-clients';
 
-// Env variables for Supabase
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_BYPASS_KEY;
-
-// Verify that the required environment variables are set
-if (!supabaseUrl || !supabaseKey) {
-    throw new Error('Missing environment variables required for server API');
-}
-
-const supabase = createClient(supabaseUrl, supabaseKey);
-
-async function getUser(id: string) {
+async function getUser(id: string, event: any) {
     try {
-        const { data, error } = await supabase.auth.admin.getUserById(id);
-
-        return { data, error };
+        // Use authenticated client with RLS - admin can read other users' data
+        const supabase = await getAuthenticatedClient(event);
+        const { data, error } = await (supabase as any)
+            .from('Employees')
+            .select('id, email, first_name, last_name, rank')
+            .eq('id', id)
+            .single();
+        
+        if (error || !data) {
+            return { 
+                data: null, 
+                error: { message: 'User not found or access denied' }
+            };
+        }
+        
+        // Format to match expected response structure
+        return { 
+            data: { 
+                user: {
+                    id: data.id,
+                    email: data.email,
+                    user_metadata: {
+                        first_name: data.first_name,
+                        last_name: data.last_name,
+                        rank: data.rank
+                    }
+                }
+            }, 
+            error: null 
+        };
     } catch (error) {
         console.error('Error in getUser:', error);
-        throw error;
-    }
-}
-
-async function authenticateUser(userId: string) {
-    try {
-        const { data, error } = await supabase
-            .from('Employees')
-            .select('rank')
-            .eq('id', userId)
-            .single();
-
-        if (error) throw error;
-
-        if (data.rank === 'Admin' || data.rank === 'Developer') {
-            return true;
-        }
-        return false;
-    } catch (error) {
-        console.error('Error checking user rank:', error);
-        return false;
+        return { 
+            data: null, 
+            error: { message: 'User retrieval failed' }
+        };
     }
 }
 
 export default defineEventHandler(async (event) => {
     try {
-        // Parsing the incoming request to get the new user's email and password
         const body = await readBody(event);
-        const { targetId, userId } = body;
+        const { targetId } = body;
 
-        if (!userId) {
-            return { status: 403, body: 'User ID not found' };
-        } else {
-            const isAuthenticated = await authenticateUser(userId);
-            if (!isAuthenticated) {
-                return { status: 403, body: 'You do not have permission to perform this request' };
-            }
-        }
+        // Enforce admin authentication using RLS
+        const { role } = await requireAdmin(event);
 
         if (!targetId) {
             return { status: 400, body: 'Missing UUID of user to be retrieved' };
         }
 
-        const response = await getUser(targetId);
+        const response = await getUser(targetId, event);
+
+        // Log user data access
+        await $fetch('/api/log-security-event', {
+            method: 'POST',
+            body: {
+                eventType: 'USER_DATA_ACCESSED',
+                details: { 
+                    targetUserId: targetId,
+                    adminRole: role,
+                    success: !response.error
+                },
+                severity: 'LOW'
+            }
+        });
 
         if (response.error) {
             return { status: 500, body: response };
         }
         return { status: 200, body: response };
     } catch (error) {
+        await $fetch('/api/log-security-event', {
+            method: 'POST',
+            body: {
+                eventType: 'API_ERROR',
+                resourceAccessed: '/api/get-user',
+                details: { error: error instanceof Error ? error.message : 'Unknown error' },
+                severity: 'CRITICAL'
+            }
+        });
         return { status: 500, body: 'Internal Server Error' };
     }
 });

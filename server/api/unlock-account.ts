@@ -1,54 +1,43 @@
 import { defineEventHandler } from 'h3';
-import { createClient } from '@supabase/supabase-js';
-import { checkUserAuthorization, logSecurityEvent } from '../../utils/security';
-
-// Env variables for Supabase
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_BYPASS_KEY;
-
-if (!supabaseUrl || !supabaseKey) {
-    throw new Error('Missing environment variables required for server API');
-}
-
-const supabase = createClient(supabaseUrl, supabaseKey);
+import { requireAdmin, getAuthenticatedClient } from '../utils/supabase-clients';
 
 export default defineEventHandler(async (event) => {
+    const body = await readBody(event);
     try {
-        const body = await readBody(event);
-        const { adminUserId, targetEmail } = body;
+        const { targetEmail } = body;
 
-        if (!adminUserId || !targetEmail) {
-            return { success: false, error: 'Admin user ID and target email are required' };
+        if (!targetEmail) {
+            return { success: false, error: 'Target email is required' };
         }
 
-        // Check if requesting user is admin/developer
-        const authCheck = await checkUserAuthorization(adminUserId, ['Admin', 'Developer']);
-        if (!authCheck.authorized) {
-            await logSecurityEvent({
-                eventType: 'UNAUTHORIZED_ACCOUNT_UNLOCK_ATTEMPT',
-                userId: adminUserId,
-                details: { targetEmail, reason: authCheck.error },
-                severity: 'HIGH'
-            });
-            return { success: false, error: 'You do not have permission to unlock accounts' };
-        }
+        // Enforce admin authentication using RLS
+        const { role } = await requireAdmin(event);
 
-        // Find target user by email
-        const { data: authUser, error: authError } = await supabase.auth.admin.getUserByEmail(targetEmail);
+        // Get authenticated client - RLS allows admins to modify users
+        const supabase = await getAuthenticatedClient(event);
+
+        // Find target user by email in Employees table using RLS-enabled client
+        const { data: employeeData, error: employeeError } = await supabase
+            .from('Employees')
+            .select('id')
+            .eq('email', targetEmail)
+            .single();
         
-        if (authError || !authUser.user) {
-            await logSecurityEvent({
-                eventType: 'ACCOUNT_UNLOCK_FAILED',
-                userId: adminUserId,
-                details: { targetEmail, reason: 'User not found' },
-                severity: 'MEDIUM'
+        if (employeeError || !employeeData) {
+            await $fetch('/api/log-security-event', {
+                method: 'POST',
+                body: {
+                    eventType: 'ACCOUNT_UNLOCK_FAILED',
+                    details: { targetEmail, reason: 'User not found' },
+                    severity: 'MEDIUM'
+                }
             });
             return { success: false, error: 'User not found' };
         }
 
-        const targetUserId = authUser.user.id;
+        const targetUserId = employeeData.id;
 
-        // Get current lockout status
+        // Get current lockout status using RLS-enabled client
         const { data: currentStatus, error: statusError } = await supabase
             .from('Employees')
             .select('failed_login_attempts, locked_until, first_name, last_name')
@@ -59,8 +48,8 @@ export default defineEventHandler(async (event) => {
             return { success: false, error: 'Failed to get user status' };
         }
 
-        // Unlock the account by clearing lockout fields
-        const { error: unlockError } = await supabase
+        // Unlock the account by clearing lockout fields using authenticated client
+        const { error: unlockError } = await (supabase as any)
             .from('Employees')
             .update({
                 failed_login_attempts: 0,
@@ -69,31 +58,36 @@ export default defineEventHandler(async (event) => {
             .eq('id', targetUserId);
 
         if (unlockError) {
-            await logSecurityEvent({
-                eventType: 'ACCOUNT_UNLOCK_FAILED',
-                userId: adminUserId,
-                details: { 
-                    targetEmail, 
-                    targetUserId,
-                    error: unlockError.message 
-                },
-                severity: 'HIGH'
+            await $fetch('/api/log-security-event', {
+                method: 'POST',
+                body: {
+                    eventType: 'ACCOUNT_UNLOCK_FAILED',
+                    details: { 
+                        targetEmail, 
+                        targetUserId,
+                        error: unlockError.message 
+                    },
+                    severity: 'HIGH'
+                }
             });
             return { success: false, error: 'Failed to unlock account' };
         }
 
         // Log successful account unlock
-        await logSecurityEvent({
-            eventType: 'ACCOUNT_UNLOCKED',
-            userId: adminUserId,
-            details: {
-                targetEmail,
-                targetUserId,
-                targetName: `${currentStatus.first_name} ${currentStatus.last_name}`,
-                previousFailedAttempts: currentStatus.failed_login_attempts,
-                wasLocked: !!currentStatus.locked_until
-            },
-            severity: 'MEDIUM'
+        await $fetch('/api/log-security-event', {
+            method: 'POST',
+            body: {
+                eventType: 'ACCOUNT_UNLOCKED',
+                details: {
+                    targetEmail,
+                    targetUserId,
+                    targetName: `${currentStatus.first_name} ${currentStatus.last_name}`,
+                    previousFailedAttempts: currentStatus.failed_login_attempts,
+                    wasLocked: !!currentStatus.locked_until,
+                    adminRole: role
+                },
+                severity: 'MEDIUM'
+            }
         });
 
         return {
@@ -104,14 +98,16 @@ export default defineEventHandler(async (event) => {
     } catch (error) {
         console.error('Error unlocking account:', error);
         
-        await logSecurityEvent({
-            eventType: 'ACCOUNT_UNLOCK_ERROR',
-            userId: body?.adminUserId,
-            details: { 
-                error: error instanceof Error ? error.message : 'Unknown error',
-                targetEmail: body?.targetEmail
-            },
-            severity: 'CRITICAL'
+        await $fetch('/api/log-security-event', {
+            method: 'POST',
+            body: {
+                eventType: 'ACCOUNT_UNLOCK_ERROR',
+                details: { 
+                    error: error instanceof Error ? error.message : 'Unknown error',
+                    targetEmail: body?.targetEmail
+                },
+                severity: 'CRITICAL'
+            }
         });
 
         return { success: false, error: 'Internal server error' };

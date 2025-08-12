@@ -1,16 +1,6 @@
 import { defineEventHandler } from 'h3';
-import { createClient } from '@supabase/supabase-js';
+import { getAuthenticatedClient } from '../utils/supabase-clients';
 import bcrypt from 'bcryptjs';
-
-// Env variables for Supabase
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_BYPASS_KEY;
-
-if (!supabaseUrl || !supabaseKey) {
-    throw new Error('Missing environment variables required for server API');
-}
-
-const supabase = createClient(supabaseUrl, supabaseKey);
 
 export default defineEventHandler(async (event) => {
     try {
@@ -21,7 +11,8 @@ export default defineEventHandler(async (event) => {
             return { isReused: false, error: 'User ID and password are required' };
         }
 
-        // Get the last 5 password hashes for this user
+        // Get the last 5 password hashes for this user using authenticated client
+        const supabase = await getAuthenticatedClient(event);
         const { data: passwordHistory, error } = await supabase
             .from('PasswordHistory')
             .select('password_hash')

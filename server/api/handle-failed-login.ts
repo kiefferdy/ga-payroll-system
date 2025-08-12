@@ -1,15 +1,5 @@
 import { defineEventHandler } from 'h3';
-import { createClient } from '@supabase/supabase-js';
-
-// Env variables for Supabase
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_BYPASS_KEY;
-
-if (!supabaseUrl || !supabaseKey) {
-    throw new Error('Missing environment variables required for server API');
-}
-
-const supabase = createClient(supabaseUrl, supabaseKey);
+import { getServiceRoleClient } from '../utils/supabase-clients';
 
 // Configuration
 const MAX_FAILED_ATTEMPTS = 5;
@@ -24,17 +14,22 @@ export default defineEventHandler(async (event) => {
             return { success: false, error: 'Email is required' };
         }
 
-        // Get user ID from auth.users table
-        const { data: authUser, error: authError } = await supabase.auth.admin.getUserByEmail(email);
+        // Get user ID from Employees table using email (service role - pre-auth)
+        const supabase = getServiceRoleClient(event);
+        const { data: employeeData, error: employeeError } = await supabase
+            .from('Employees')
+            .select('id, email')
+            .eq('email', email)
+            .single();
         
-        if (authError || !authUser.user) {
+        if (employeeError || !employeeData) {
             // Don't reveal if email exists - silently succeed
             return { success: true };
         }
 
-        const userId = authUser.user.id;
+        const userId = employeeData.id;
 
-        // Get current failed attempts
+        // Get current failed attempts using service role client
         const { data: currentData, error: fetchError } = await supabase
             .from('Employees')
             .select('failed_login_attempts, locked_until')
@@ -59,24 +54,25 @@ export default defineEventHandler(async (event) => {
             lockUntil.setMinutes(lockUntil.getMinutes() + LOCKOUT_DURATION_MINUTES);
             updateData.locked_until = lockUntil.toISOString();
 
-            // Log account lockout
-            await supabase
-                .from('SecurityLogs')
-                .insert({
-                    event_type: 'ACCOUNT_LOCKED',
-                    user_id: userId,
-                    user_email: email,
+            // Log account lockout using RLS logging
+            await $fetch('/api/log-security-event', {
+                method: 'POST',
+                body: {
+                    eventType: 'ACCOUNT_LOCKED',
+                    userId,
+                    userEmail: email,
                     details: {
                         failed_attempts: newFailedAttempts,
                         locked_until: lockUntil.toISOString(),
                         lockout_duration_minutes: LOCKOUT_DURATION_MINUTES
                     },
                     severity: 'HIGH'
-                });
+                }
+            });
         }
 
-        // Update failed attempts (and potentially lock account)
-        const { error: updateError } = await supabase
+        // Update failed attempts (and potentially lock account) using service role client
+        const { error: updateError } = await (supabase as any)
             .from('Employees')
             .update(updateData)
             .eq('id', userId);
@@ -86,20 +82,21 @@ export default defineEventHandler(async (event) => {
             return { success: false, error: 'Failed to update login attempts' };
         }
 
-        // Log failed login attempt with current count
-        await supabase
-            .from('SecurityLogs')
-            .insert({
-                event_type: 'FAILED_LOGIN_ATTEMPT',
-                user_id: userId,
-                user_email: email,
+        // Log failed login attempt using RLS logging
+        await $fetch('/api/log-security-event', {
+            method: 'POST',
+            body: {
+                eventType: 'FAILED_LOGIN_ATTEMPT',
+                userId,
+                userEmail: email,
                 details: {
                     failed_attempts: newFailedAttempts,
                     max_attempts: MAX_FAILED_ATTEMPTS,
                     will_lock: newFailedAttempts >= MAX_FAILED_ATTEMPTS
                 },
                 severity: newFailedAttempts >= MAX_FAILED_ATTEMPTS ? 'HIGH' : 'MEDIUM'
-            });
+            }
+        });
 
         return { 
             success: true, 

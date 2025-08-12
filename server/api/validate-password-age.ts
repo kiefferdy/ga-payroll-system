@@ -1,15 +1,5 @@
 import { defineEventHandler } from 'h3';
-import { createClient } from '@supabase/supabase-js';
-
-// Env variables for Supabase
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_BYPASS_KEY;
-
-if (!supabaseUrl || !supabaseKey) {
-    throw new Error('Missing environment variables required for server API');
-}
-
-const supabase = createClient(supabaseUrl, supabaseKey);
+import { getAuthenticatedClient } from '../utils/supabase-clients';
 
 // Minimum age before password can be changed (24 hours)
 const MIN_PASSWORD_AGE_HOURS = 24;
@@ -23,7 +13,8 @@ export default defineEventHandler(async (event) => {
             return { canChange: true, error: 'User ID is required' };
         }
 
-        // Get password change timestamp from Employees table
+        // Get password change timestamp from Employees table using authenticated client
+        const supabase = await getAuthenticatedClient(event);
         const { data, error } = await supabase
             .from('Employees')
             .select('password_changed_at')
