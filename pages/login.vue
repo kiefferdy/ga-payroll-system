@@ -25,7 +25,8 @@
             </NuxtLink>
          </div>
          
-         <div v-if="wrong" class="error">Incorrect email or password</div>
+         <div v-if="wrong && !isLocked" class="error">Incorrect email or password</div>
+         <div v-if="lockoutMessage" class="error">{{ lockoutMessage }}</div>
       </div>
       <div class="divider divider-horizontal"></div>
       <figure><img src="~assets/images/logo.png" class="w-80"></figure>
@@ -42,7 +43,7 @@
 <script setup>
 
    import { useRouter } from 'vue-router';
-   import { logAuthenticationAttempt, validateEmail, sanitizeInput } from '~/utils/security';
+   import { logAuthenticationAttempt, validateEmail, sanitizeInput, checkAccountLockout, logSecurityEvent } from '~/utils/security';
 
    const router = useRouter();
    const supabase = useSupabaseClient();
@@ -52,11 +53,18 @@
    const password = ref("");
    const wrong = ref(false);
    const isLoading = ref(false);
+   const lockoutMessage = ref("");
+   const isLocked = ref(false);
 
    const passwordFieldType = computed(() => hidePassword.value ? "password" : "text");
 
    async function signIn() {
       if (isLoading.value) return;
+
+      // Reset previous states
+      wrong.value = false;
+      lockoutMessage.value = "";
+      isLocked.value = false;
 
       // Input validation
       if (!email.value.trim() || !password.value) {
@@ -77,6 +85,19 @@
       isLoading.value = true;
 
       try {
+         // Check if account is locked before attempting login
+         const lockoutCheck = await checkAccountLockout(cleanEmail);
+         
+         if (lockoutCheck.isLocked && lockoutCheck.lockedUntil) {
+            const lockedUntil = new Date(lockoutCheck.lockedUntil);
+            const minutes = Math.ceil((lockedUntil.getTime() - new Date().getTime()) / (1000 * 60));
+            
+            lockoutMessage.value = `Account is temporarily locked. Try again in ${minutes} minutes.`;
+            isLocked.value = true;
+            isLoading.value = false;
+            return;
+         }
+
          const { error } = await supabase.auth.signInWithPassword({
             email: cleanEmail,
             password: cleanPassword,
@@ -93,12 +114,24 @@
                { errorMessage: error.message }
             );
 
+            // Increment failed attempts and potentially lock account
+            await $fetch('/api/handle-failed-login', {
+               method: 'POST',
+               body: { email: cleanEmail }
+            });
+
             wrong.value = true;
             
          } else {
             const { data: { user } } = await supabase.auth.getUser();
 
             if(user) {
+               // Update last login timestamp and reset failed attempts
+               await $fetch('/api/update-login-success', {
+                  method: 'POST',
+                  body: { userId: user.id }
+               });
+
                // Log successful authentication
                await logAuthenticationAttempt(
                   'LOGIN_SUCCESS',
@@ -112,7 +145,7 @@
 
                const { data, error } = await supabase
                   .from('Employees')
-                  .select('time_in_status, first_name, last_name')
+                  .select('time_in_status, first_name, last_name, last_login_at')
                   .eq('id', user.id);
 
                if(error) {

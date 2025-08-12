@@ -14,6 +14,12 @@
       </div>
       <h1 class="card-title text-2xl mt-24">{{ greeting }},</h1>
       <p>{{ username }}</p>
+      
+      <!-- Last Login Information -->
+      <div v-if="lastLoginDisplay" class="text-center mt-2 mb-2">
+        <p class="text-xs text-gray-600">Last login: {{ lastLoginDisplay }}</p>
+      </div>
+      
       <p class="mt-5 mb-1.5">{{ currentTime }}</p>
       <div class="card-actions">
          <button @click="initializeTimeIn" class="btn btn-circle btn-ghost w-36 h-36 mt-1 bg-clock_in_green text-white">Time In</button>
@@ -65,6 +71,7 @@
          const currentTime = ref("");
          const greeting = ref("");
          const username = ref("");
+         const lastLoginDisplay = ref("");
 
          const updateTimeAndGreeting = () => {
             const date = new Date();
@@ -94,13 +101,42 @@
             if (user) {
                const { data, error } = await supabase
                   .from('Employees')
-                  .select('first_name')
+                  .select('first_name, last_login_at')
                   .eq('id', user.id);  // Use the UUID of the current user
 
                console.log("Fetched current user data:", data);
 
                if (data && data.length > 0) {
                   username.value = `${data[0].first_name}`;
+                  
+                  // Format and display last login information
+                  if (data[0].last_login_at) {
+                     const lastLogin = new Date(data[0].last_login_at);
+                     const now = new Date();
+                     const diffMinutes = Math.floor((now - lastLogin) / (1000 * 60));
+                     
+                     if (diffMinutes < 1) {
+                        lastLoginDisplay.value = "Just now";
+                     } else if (diffMinutes < 60) {
+                        lastLoginDisplay.value = `${diffMinutes} minute${diffMinutes > 1 ? 's' : ''} ago`;
+                     } else if (diffMinutes < 1440) { // Less than 24 hours
+                        const hours = Math.floor(diffMinutes / 60);
+                        lastLoginDisplay.value = `${hours} hour${hours > 1 ? 's' : ''} ago`;
+                     } else {
+                        // More than 24 hours - show actual date/time
+                        const options = { 
+                           year: 'numeric', 
+                           month: 'short', 
+                           day: 'numeric',
+                           hour: '2-digit', 
+                           minute: '2-digit',
+                           hour12: true
+                        };
+                        lastLoginDisplay.value = lastLogin.toLocaleDateString('en-US', options);
+                     }
+                  } else {
+                     lastLoginDisplay.value = "First login";
+                  }
                } else if (error) {
                   console.error('Error fetching user info:', error);
                }
@@ -339,7 +375,7 @@
          updateTimeAndGreeting(); // Get current time and appropriate greeting
          setInterval(updateTimeAndGreeting, 60000); // Update time and greeting every minute
 
-         return { currentTime, greeting, username, userIsAdmin, initializeTimeIn, logout, goToSettings };
+         return { currentTime, greeting, username, lastLoginDisplay, userIsAdmin, initializeTimeIn, logout, goToSettings };
       }
    };
 

@@ -83,7 +83,7 @@
 <script setup>
 import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
-import { validatePasswordComplexity, logSecurityEvent } from '~/utils/security';
+import { validatePasswordComplexity, logSecurityEvent, checkPasswordHistory } from '~/utils/security';
 
 const supabase = useSupabaseClient();
 const router = useRouter();
@@ -162,6 +162,17 @@ async function updatePassword() {
     return;
   }
 
+  // Get user info for password history check
+  const { data: { user } } = await supabase.auth.getUser();
+  if (user) {
+    // Check password history to prevent reuse
+    const historyCheck = await checkPasswordHistory(user.id, password.value);
+    if (historyCheck.isReused) {
+      errorMessage.value = historyCheck.error || 'This password has been used recently. Please choose a different password.';
+      return;
+    }
+  }
+
   isLoading.value = true;
 
   try {
@@ -188,18 +199,34 @@ async function updatePassword() {
 
       errorMessage.value = 'Unable to update password. Please try again.';
     } else {
-      // Log successful password update
+      // Store new password in history and update timestamp
       const { data: { user } } = await supabase.auth.getUser();
-      await logSecurityEvent({
-        eventType: 'PASSWORD_UPDATED',
-        userId: user?.id,
-        userEmail: user?.email,
-        details: { 
-          method: 'password_reset_link',
-          strength: passwordValidation.strength
-        },
-        severity: 'LOW'
-      });
+      if (user) {
+        try {
+          await $fetch('/api/store-password-history', {
+            method: 'POST',
+            body: {
+              userId: user.id,
+              newPassword: password.value
+            }
+          });
+        } catch (historyError) {
+          console.error('Failed to store password history:', historyError);
+          // Don't fail the entire operation, just log it
+        }
+
+        // Log successful password update
+        await logSecurityEvent({
+          eventType: 'PASSWORD_UPDATED',
+          userId: user.id,
+          userEmail: user.email,
+          details: { 
+            method: 'password_reset_link',
+            strength: passwordValidation.strength
+          },
+          severity: 'LOW'
+        });
+      }
 
       successMessage.value = 'Password updated successfully! Redirecting to login...';
       

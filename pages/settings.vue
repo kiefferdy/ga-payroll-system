@@ -106,7 +106,9 @@
       logSecurityEvent, 
       validatePasswordComplexity,
       validateEmail as validateEmailUtil,
-      logAuthenticationAttempt
+      logAuthenticationAttempt,
+      checkPasswordHistory,
+      validatePasswordAge
    } from '~/utils/security';
 
    const supabase = useSupabaseClient();
@@ -210,6 +212,23 @@
             alert(`Password does not meet complexity requirements:\n${passwordValidation.errors.join('\n')}`);
             return;
          }
+
+         // Check password age restriction (24 hour minimum)
+         const { data: { user } } = await supabase.auth.getUser();
+         if (user) {
+            const ageValidation = await validatePasswordAge(user.id);
+            if (!ageValidation.canChange) {
+               alert(`Password age restriction: ${ageValidation.error}`);
+               return;
+            }
+
+            // Check password history to prevent reuse
+            const historyCheck = await checkPasswordHistory(user.id, password.value);
+            if (historyCheck.isReused) {
+               alert(historyCheck.error || 'This password has been used recently. Please choose a different password.');
+               return;
+            }
+         }
       }
 
       // Store pending credentials
@@ -258,6 +277,22 @@
             updateAccountFailure.value = true;
             setTimeout(() => updateAccountFailure.value = false, 5000);
          } else {
+            // If password was changed, store it in history and update timestamp
+            if (pendingCredentials.value.password) {
+               try {
+                  await $fetch('/api/store-password-history', {
+                     method: 'POST',
+                     body: {
+                        userId: authData.userId,
+                        newPassword: pendingCredentials.value.password
+                     }
+                  });
+               } catch (historyError) {
+                  console.error('Failed to store password history:', historyError);
+                  // Don't fail the entire operation, just log it
+               }
+            }
+
             // Log successful credential update
             await logSecurityEvent({
                eventType: 'CREDENTIALS_UPDATED',

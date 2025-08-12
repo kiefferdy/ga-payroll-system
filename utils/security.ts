@@ -186,3 +186,62 @@ export function validateStringLength(value: string, min: number, max: number): b
 export function validateNumericRange(value: number, min: number, max: number): boolean {
   return value >= min && value <= max
 }
+
+/**
+ * Account lockout management
+ */
+export async function checkAccountLockout(email: string): Promise<{
+  isLocked: boolean
+  lockedUntil?: Date
+  failedAttempts?: number
+}> {
+  try {
+    const response = await $fetch('/api/check-account-lockout', {
+      method: 'POST',
+      body: { email }
+    })
+    return response as { isLocked: boolean; lockedUntil?: Date; failedAttempts?: number }
+  } catch (error) {
+    console.error('Error checking account lockout:', error)
+    return { isLocked: false }
+  }
+}
+
+/**
+ * Password history management
+ */
+export async function checkPasswordHistory(userId: string, newPassword: string): Promise<{
+  isReused: boolean
+  error?: string
+}> {
+  try {
+    const response = await $fetch('/api/check-password-history', {
+      method: 'POST',
+      body: { userId, newPassword }
+    })
+    return response as { isReused: boolean; error?: string }
+  } catch (error) {
+    console.error('Error checking password history:', error)
+    return { isReused: false, error: 'Password history check failed' }
+  }
+}
+
+/**
+ * Password age validation
+ */
+export async function validatePasswordAge(userId: string): Promise<{
+  canChange: boolean
+  hoursRemaining?: number
+  error?: string
+}> {
+  try {
+    const response = await $fetch('/api/validate-password-age', {
+      method: 'POST',
+      body: { userId }
+    })
+    return response as { canChange: boolean; hoursRemaining?: number; error?: string }
+  } catch (error) {
+    console.error('Error validating password age:', error)
+    return { canChange: true, error: 'Password age validation failed' }
+  }
+}
