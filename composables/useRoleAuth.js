@@ -3,7 +3,7 @@
  * Provides utilities for role-based UI rendering and access control
  */
 
-import { ref, computed } from 'vue';
+import { ref, computed, watch, readonly } from 'vue';
 
 export const useRoleAuth = () => {
   const supabase = useSupabaseClient();
@@ -40,6 +40,15 @@ export const useRoleAuth = () => {
   );
   const isDeveloper = computed(() => currentUserRole.value === 'Developer');
 
+  // Role-based access computed properties
+  const canAccessAdmin = computed(() => hasAnyRole(['Admin', 'Developer', 'Website Administrator']));
+  const canAccessAdminOnly = computed(() => hasAnyRole(['Admin', 'Website Administrator']));
+  const canAccessManager = computed(() => hasMinimumRole('Product Manager'));
+  const canAccessEmployee = computed(() => hasMinimumRole('Employee'));
+  const canManageUsers = computed(() => hasAnyRole(['Admin', 'Developer', 'Website Administrator']));
+  const canViewSecurity = computed(() => hasAnyRole(['Admin', 'Developer']));
+  const canModifySettings = computed(() => hasAnyRole(['Admin', 'Developer', 'Website Administrator']));
+
   // Methods
   /**
    * Check if current user has minimum required role
@@ -72,54 +81,6 @@ export const useRoleAuth = () => {
   function hasAnyRole(roles) {
     if (!Array.isArray(roles) || !currentUserRole.value) return false;
     return roles.includes(currentUserRole.value);
-  }
-
-  /**
-   * Check if user can access admin features
-   * @returns {boolean}
-   */
-  function canAccessAdmin() {
-    return hasAnyRole(['Admin', 'Developer', 'Website Administrator']);
-  }
-
-  /**
-   * Check if user can access manager features  
-   * @returns {boolean}
-   */
-  function canAccessManager() {
-    return hasMinimumRole('Product Manager');
-  }
-
-  /**
-   * Check if user can access employee features
-   * @returns {boolean}
-   */
-  function canAccessEmployee() {
-    return hasMinimumRole('Employee');
-  }
-
-  /**
-   * Check if user can manage other users
-   * @returns {boolean}
-   */
-  function canManageUsers() {
-    return hasAnyRole(['Admin', 'Developer', 'Website Administrator']);
-  }
-
-  /**
-   * Check if user can view security features
-   * @returns {boolean}
-   */
-  function canViewSecurity() {
-    return hasAnyRole(['Admin', 'Developer']);
-  }
-
-  /**
-   * Check if user can modify system settings
-   * @returns {boolean}
-   */
-  function canModifySettings() {
-    return hasAnyRole(['Admin', 'Developer', 'Website Administrator']);
   }
 
   /**
@@ -241,6 +202,7 @@ export const useRoleAuth = () => {
     hasExactRole,
     hasAnyRole,
     canAccessAdmin,
+    canAccessAdminOnly,
     canAccessManager,
     canAccessEmployee,
     canManageUsers,

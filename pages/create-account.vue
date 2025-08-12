@@ -99,9 +99,9 @@
 </style>
 
 <script setup>
-   // Apply admin middleware to this page - only admins can create accounts
+   // Apply admin-only middleware to this page - only admins (not developers) can create accounts
    definePageMeta({
-      middleware: 'admin'
+      middleware: 'admin-only'
    });
 
    import { ref, computed } from 'vue';
@@ -251,7 +251,8 @@
       genericError.value = false;
    }
 
-   // Verification check to see if user is an admin or developer
+   // Verification check removed - now handled by admin-only middleware
+   /*
    const verifyUserRank = async () => {
       const { data: { user } } = await supabase.auth.getUser();  // Get the current user
 
@@ -278,8 +279,8 @@
          console.log("User is not logged in.");
       }
    }
+   */
 
-   // Functions to be run once page loads
-   verifyUserRank();
+   // Functions to be run once page loads - removed verifyUserRank() call
 
 </script>

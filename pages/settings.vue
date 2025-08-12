@@ -59,7 +59,7 @@
       <!-- Sidebar Menu -->
       <ul class="menu w-[10rem] p-0 font-bold text-white justify-between">
          <div>
-            <li class="py-2 items-center"><NuxtLink to="/employees">Employees</NuxtLink></li>
+            <li v-if="canAccessAdminOnly" class="py-2 items-center"><NuxtLink to="/employees">Employees</NuxtLink></li>
             <li class="py-2 items-center"><NuxtLink to="/records">Records</NuxtLink></li>
             <li class="active bg-primary_white rounded-r-[1rem] py-2 items-center text-black"><NuxtLink to="/settings">Settings</NuxtLink></li>         
          </div>
@@ -98,9 +98,11 @@
 
    import { ref } from 'vue';
    import { useRouter } from 'vue-router';
+   import { useRoleAuth } from '~/composables/useRoleAuth';
 
    const supabase = useSupabaseClient();
    const router = useRouter();
+   const { canAccessAdminOnly } = useRoleAuth();
 
    // Hide password functionality
    const hidePassword = ref(true);

@@ -1,6 +1,13 @@
 <template>
-  <nav class="role-based-nav">
-    <!-- Main Navigation Items -->
+  <nav class="role-based-n      <!-- Employee Management - Admin only (NOT developers) -->
+      <li v-if="canAccessAdminOnly" class="nav-item" :class="getNavItemClass('/employees')">
+        <NuxtLink to="/employees" class="nav-link">
+          <svg class="nav-icon" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M13 6a3 3 0 11-6 0 3 3 0 616 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3z"/>
+          </svg>
+          <span v-if="!compact">Employees</span>
+        </NuxtLink>
+      </li> <!-- Main Navigation Items -->
     <ul class="nav-list" :class="navListClass">
       <!-- Dashboard - Available to all employees -->
       <li v-if="canAccessEmployee" class="nav-item" :class="getNavItemClass('/')">
@@ -25,8 +32,8 @@
       <!-- Divider -->
       <li v-if="canAccessManager || canAccessAdmin" class="nav-divider"></li>
 
-      <!-- Records - Manager level and above -->
-      <li v-if="canAccessManager" class="nav-item" :class="getNavItemClass('/records')">
+      <!-- Records - Admin and Developer only -->
+      <li v-if="canAccessAdmin" class="nav-item" :class="getNavItemClass('/records')">
         <NuxtLink to="/records" class="nav-link">
           <svg class="nav-icon" fill="currentColor" viewBox="0 0 20 20">
             <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/>
@@ -36,11 +43,11 @@
         </NuxtLink>
       </li>
 
-      <!-- Employee Management - Admin only -->
-      <li v-if="canAccessAdmin" class="nav-item" :class="getNavItemClass('/employees')">
+      <!-- Employee Management - Admin only (NOT developers) -->
+      <li v-if="canAccessAdmin && !isDeveloper" class="nav-item" :class="getNavItemClass('/employees')">
         <NuxtLink to="/employees" class="nav-link">
           <svg class="nav-icon" fill="currentColor" viewBox="0 0 20 20">
-            <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3z"/>
+            <path d="M13 6a3 3 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3z"/>
           </svg>
           <span v-if="!compact">Employees</span>
         </NuxtLink>
@@ -130,8 +137,10 @@ const {
   canAccessEmployee,
   canAccessManager,
   canAccessAdmin,
+  canAccessAdminOnly,
   canViewSecurity,
   canModifySettings,
+  isDeveloper,
   getRoleDisplayName,
   getRoleBadgeColor
 } = useRoleAuth();

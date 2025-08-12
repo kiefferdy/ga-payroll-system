@@ -1,14 +1,17 @@
 <script setup>
-// Apply manager middleware to this page - records should be accessible by managers and admins
+// Apply admin middleware to this page - records should be accessible by admins and developers
 definePageMeta({
-   middleware: 'manager'
+   middleware: 'admin'
 });
 
 const user = useSupabaseUser();
 const supabase = useSupabaseClient();
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
+import { useRoleAuth } from '~/composables/useRoleAuth';
+
 const router = useRouter();
+const { canAccessAdminOnly } = useRoleAuth();
 let monday = [];
 let tuesday = [];
 let wednesday = [];
@@ -699,9 +702,7 @@ const logout = async () => {
       </div>
       <ul class="menu w-[10rem] p-0 font-bold text-white justify-between">
          <div>
-            <li class="py-2 items-center">
-               <NuxtLink to="/employees">Employees</NuxtLink>
-            </li>
+            <li v-if="canAccessAdminOnly" class="py-2 items-center"><NuxtLink to="/employees">Employees</NuxtLink></li>
             <li class="active bg-primary_white rounded-r-[1rem] py-2 items-center text-black">
                <NuxtLink to="/records">Records</NuxtLink>
             </li>

@@ -67,9 +67,9 @@
  </style>
  
 <script setup>
-   // Apply admin middleware to this page - only admins can edit accounts
+   // Apply admin-only middleware to this page - only admins (not developers) can edit accounts
    definePageMeta({
-      middleware: 'admin'
+      middleware: 'admin-only'
    });
 
    import { ref } from 'vue';

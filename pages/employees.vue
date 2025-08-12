@@ -43,9 +43,9 @@
 </template>
 
 <script setup>
-   // Apply admin middleware to this page - only admins can manage employees
+   // Apply admin-only middleware to this page - only admins (not developers) can manage employees
    definePageMeta({
-      middleware: 'admin'
+      middleware: 'admin-only'
    });
 
    import { useRouter } from 'vue-router';
@@ -87,7 +87,8 @@
       });
    };
 
-   // Verification check to see if user is an admin or developer before showing settings icon
+   // Verification check removed - now handled by admin-only middleware
+   /*
    const verifyUserRank = async () => {
       const { data: { user } } = await supabase.auth.getUser();  // Get the current user
 
@@ -114,6 +115,7 @@
          console.log("User is not logged in.");
       }
    }
+   */
 
    // Logout function
    const logout = async () => {
@@ -126,7 +128,6 @@
    };
 
    // Functions to be run once page loads
-   verifyUserRank();
    fetchEmployees();
 
 </script>
