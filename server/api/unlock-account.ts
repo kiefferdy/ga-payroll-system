@@ -1,5 +1,5 @@
 import { defineEventHandler } from 'h3';
-import { requireAdmin, getAuthenticatedClient } from '../utils/supabase-clients';
+import { requireAdmin, getAuthenticatedClient, getServiceRoleClient } from '../utils/supabase-clients';
 
 export default defineEventHandler(async (event) => {
     const body = await readBody(event);
@@ -13,14 +13,38 @@ export default defineEventHandler(async (event) => {
         // Enforce admin authentication using RLS
         const { role } = await requireAdmin(event);
 
-        // Get authenticated client - RLS allows admins to modify users
+        // Get service role client only for auth.users lookup (necessary since auth.users doesn't respect RLS)
+        const serviceRoleSupabase = getServiceRoleClient(event);
+        
+        // Get authenticated client for Employee table operations (respects RLS - admins can modify users)
         const supabase = await getAuthenticatedClient(event);
+        
+        // Find target user by email in auth.users table
+        const { data: userData, error: userError } = await serviceRoleSupabase.auth.admin.listUsers();
+        
+        if (userError) {
+            console.error('Error fetching users:', userError);
+            return { success: false, error: 'Failed to fetch user data' };
+        }
+        
+        const user = userData.users.find(u => u.email === targetEmail);
+        if (!user) {
+            await $fetch('/api/log-security-event', {
+                method: 'POST',
+                body: {
+                    eventType: 'ACCOUNT_UNLOCK_FAILED',
+                    details: { targetEmail, reason: 'User not found' },
+                    severity: 'MEDIUM'
+                }
+            });
+            return { success: false, error: 'User not found' };
+        }
 
-        // Find target user by email in Employees table using RLS-enabled client
+        // Check if user exists in Employees table using RLS-enabled client
         const { data: employeeData, error: employeeError } = await supabase
             .from('Employees')
             .select('id')
-            .eq('email', targetEmail)
+            .eq('id', user.id)
             .single();
         
         if (employeeError || !employeeData) {
@@ -35,7 +59,7 @@ export default defineEventHandler(async (event) => {
             return { success: false, error: 'User not found' };
         }
 
-        const targetUserId = employeeData.id;
+        const targetUserId = user.id;
 
         // Get current lockout status using RLS-enabled client
         const { data: currentStatus, error: statusError } = await supabase
@@ -48,7 +72,7 @@ export default defineEventHandler(async (event) => {
             return { success: false, error: 'Failed to get user status' };
         }
 
-        // Unlock the account by clearing lockout fields using authenticated client
+        // Unlock the account by clearing lockout fields using RLS-enabled client
         const { error: unlockError } = await (supabase as any)
             .from('Employees')
             .update({

@@ -14,12 +14,26 @@ export default defineEventHandler(async (event) => {
             return { success: false, error: 'Email is required' };
         }
 
-        // Get user ID from Employees table using email (service role - pre-auth)
+        // Get user ID from auth.users table using email (service role - pre-auth)
         const supabase = getServiceRoleClient(event);
+        const { data: userData, error: userError } = await supabase.auth.admin.listUsers();
+        
+        if (userError) {
+            console.error('Error fetching users:', userError);
+            return { success: true }; // Don't reveal if email exists
+        }
+        
+        const user = userData.users.find(u => u.email === email);
+        if (!user) {
+            // Don't reveal if email exists - silently succeed
+            return { success: true };
+        }
+        
+        // Check if user exists in Employees table
         const { data: employeeData, error: employeeError } = await supabase
             .from('Employees')
-            .select('id, email')
-            .eq('email', email)
+            .select('id')
+            .eq('id', user.id)
             .single();
         
         if (employeeError || !employeeData) {
@@ -27,7 +41,7 @@ export default defineEventHandler(async (event) => {
             return { success: true };
         }
 
-        const userId = employeeData.id;
+        const userId = user.id;
 
         // Get current failed attempts using service role client
         const { data: currentData, error: fetchError } = await supabase

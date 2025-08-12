@@ -10,12 +10,26 @@ export default defineEventHandler(async (event) => {
             return { error: 'Email is required' };
         }
 
-        // Get user ID from Employees table using email (service role - pre-auth check)
+        // Get user ID from auth.users table using email (service role - pre-auth check)
         const supabase = getServiceRoleClient(event);
+        const { data: userData, error: userError } = await supabase.auth.admin.listUsers();
+        
+        if (userError) {
+            console.error('Error fetching users:', userError);
+            return { isLocked: false };
+        }
+        
+        const user = userData.users.find(u => u.email === email);
+        if (!user) {
+            // Don't reveal if email exists - return unlocked status
+            return { isLocked: false };
+        }
+        
+        // Check if user exists in Employees table
         const { data: employeeData, error: employeeError } = await supabase
             .from('Employees')
             .select('id')
-            .eq('email', email)
+            .eq('id', user.id)
             .single();
 
         if (employeeError || !employeeData) {
@@ -27,7 +41,7 @@ export default defineEventHandler(async (event) => {
         const { data, error } = await supabase
             .from('Employees')
             .select('failed_login_attempts, locked_until')
-            .eq('id', employeeData.id)
+            .eq('id', user.id)
             .single();
 
         if (error || !data) {
@@ -42,13 +56,13 @@ export default defineEventHandler(async (event) => {
 
         // If lock period has expired, clear the lock using service role client
         if (lockedUntil && lockedUntil <= now) {
-            await supabase
+            await (supabase as any)
                 .from('Employees')
                 .update({
                     locked_until: null,
                     failed_login_attempts: 0
                 })
-                .eq('id', employeeData.id);
+                .eq('id', user.id);
 
             return {
                 isLocked: false,
