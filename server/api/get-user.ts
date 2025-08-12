@@ -1,33 +1,36 @@
 import { defineEventHandler } from 'h3';
-import { requireAdmin, getAuthenticatedClient } from '../utils/supabase-clients';
+import { requireAdmin, getServiceRoleClient } from '../utils/supabase-clients';
 
 async function getUser(id: string, event: any) {
     try {
-        // Use authenticated client with RLS - admin can read other users' data
-        const supabase = await getAuthenticatedClient(event);
-        const { data, error } = await (supabase as any)
-            .from('Employees')
-            .select('id, email, first_name, last_name, rank')
-            .eq('id', id)
-            .single();
+        const supabase = getServiceRoleClient(event);
         
-        if (error || !data) {
+        // Get auth user data (includes email)
+        const { data: authUser, error: authError } = await supabase.auth.admin.getUserById(id);
+        if (authError || !authUser.user) {
             return { 
                 data: null, 
-                error: { message: 'User not found or access denied' }
+                error: { message: 'User not found' }
             };
         }
         
-        // Format to match expected response structure
+        // Get employee data (includes rank, name, etc.)
+        const { data: employeeData, error: empError } = await (supabase as any)
+            .from('Employees')
+            .select('first_name, last_name, rank')
+            .eq('id', id)
+            .single();
+        
+        // Combine auth and employee data
         return { 
             data: { 
                 user: {
-                    id: data.id,
-                    email: data.email,
+                    id: authUser.user.id,
+                    email: authUser.user.email,
                     user_metadata: {
-                        first_name: data.first_name,
-                        last_name: data.last_name,
-                        rank: data.rank
+                        first_name: employeeData?.first_name || '',
+                        last_name: employeeData?.last_name || '',
+                        rank: employeeData?.rank || 'Employee'
                     }
                 }
             }, 
