@@ -138,9 +138,9 @@
    });
 
    // Validate password as user types
-   function validatePasswordOnChange() {
+   async function validatePasswordOnChange() {
       if (password.value) {
-         const validation = validatePasswordComplexity(password.value);
+         const validation = await validatePasswordComplexity(password.value);
          passwordErrors.value = validation.errors;
          passwordStrength.value = validation.strength;
       } else {
@@ -304,7 +304,7 @@
       passwordsNotMatch.value = password.value !== verifyPassword.value;
       
       // Validate password complexity
-      const passwordValidation = validatePasswordComplexity(password.value);
+      const passwordValidation = await validatePasswordComplexity(password.value);
       passwordComplexityError.value = !passwordValidation.valid;
       
       // Check for incomplete fields
