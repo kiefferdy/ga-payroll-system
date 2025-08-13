@@ -13,7 +13,7 @@ if (!accountSid || !authToken || !serviceSid) {
 }
 const client = Twilio(accountSid, authToken);
 
-export default defineEventHandler(async () => {
+export default defineEventHandler(async (event) => {
     try {
         // Fetch settings from Supabase (system settings don't require user auth)
         const supabase = getServiceRoleClient(event);
