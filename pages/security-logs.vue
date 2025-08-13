@@ -15,6 +15,9 @@
               <option value="">All Events</option>
               <option value="LOGIN_SUCCESS">Login Success</option>
               <option value="LOGIN_FAILED">Login Failed</option>
+              <option value="FAILED_LOGIN_ATTEMPT">Failed Login Attempt</option>
+              <option value="ACCOUNT_LOCKED">Account Locked</option>
+              <option value="ACCOUNT_UNLOCKED">Account Unlocked</option>
               <option value="ACCESS_DENIED">Access Denied</option>
               <option value="CREDENTIALS_UPDATED">Credentials Updated</option>
               <option value="PASSWORD_RESET_REQUESTED">Password Reset</option>

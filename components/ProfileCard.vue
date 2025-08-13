@@ -11,9 +11,22 @@
                <div :class="[employee.time_in_status ? 'bg-clock_in_green' : 'bg-clock_out_red']" class="rounded-full w-2.5 h-2.5 mx-1 mt-2"></div>
                <p>{{ employee.time_in_status ? 'In' : 'Out' }}</p>         
             </div>
+            <div v-if="isAccountLocked" class="flex flex-row self-end mt-1">
+               <p class="mr-4 text-red-600 text-xs font-semibold">🔒 Account Locked</p>
+            </div>
             <p class="text-xs">Last updated: {{ formatTime(employee.last_updated) }}</p>
          </div>
          <div class="card card-side items-center">
+            <button 
+               v-if="isAccountLocked" 
+               @click="handleUnlock" 
+               :disabled="isUnlocking"
+               class="btn btn-warning btn-sm me-2" 
+               title="Unlock Account"
+            >
+               <span v-if="isUnlocking" class="loading loading-spinner loading-xs"></span>
+               <span v-else>🔓</span>
+            </button>
             <NuxtLink :to="`/edit-account/${employee.id}`">
                <button class="btn btn-info btn-sm me-2"><img src="~/assets/icons/edit.png" class="w-4"></button>
             </NuxtLink>
@@ -34,9 +47,76 @@
       employee: Object
    });
 
+   const emit = defineEmits(['employee-unlocked']);
+
+   // Reactive state for unlock operation
+   const isUnlocking = ref(false);
+
+   // Computed property to check if account is locked
+   const isAccountLocked = computed(() => {
+      if (!props.employee.locked_until) return false;
+      const lockExpiry = new Date(props.employee.locked_until);
+      const now = new Date();
+      return lockExpiry > now;
+   });
+
    const formatTime = (time) => {
       const formattedTime = new Date(time);
       return formattedTime.toLocaleString();
+   };
+
+   // Handles account unlock
+   const handleUnlock = async () => {
+      const targetEmail = await getEmployeeEmail();
+      if (!targetEmail) {
+         alert('Unable to retrieve employee email');
+         return;
+      }
+
+      if (!confirm(`Are you sure you want to unlock the account for ${props.employee.first_name} ${props.employee.last_name} (${targetEmail})?`)) {
+         return;
+      }
+
+      isUnlocking.value = true;
+
+      try {
+         const response = await $fetch('/api/unlock-account', {
+            method: 'POST',
+            body: { targetEmail }
+         });
+
+         if (response.success) {
+            alert(`Account for ${targetEmail} has been unlocked successfully`);
+            emit('employee-unlocked');
+         } else {
+            alert(`Failed to unlock account: ${response.error}`);
+         }
+      } catch (error) {
+         console.error('Error unlocking account:', error);
+         alert('Failed to unlock account. Please try again.');
+      } finally {
+         isUnlocking.value = false;
+      }
+   };
+
+   // Get employee email from auth.users table via API
+   const getEmployeeEmail = async () => {
+      try {
+         const response = await $fetch('/api/get-user-email', {
+            method: 'POST',
+            body: { userId: props.employee.id }
+         });
+
+         if (response.success) {
+            return response.email;
+         } else {
+            console.error('Error getting email:', response.error);
+            return null;
+         }
+      } catch (error) {
+         console.error('Error getting employee email:', error);
+         return null;
+      }
    };
 
    // Handles employee deletion

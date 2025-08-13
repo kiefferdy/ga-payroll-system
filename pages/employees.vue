@@ -16,12 +16,12 @@
          <div>
             <div v-if="filteredEmployees.length == 0">
                <div v-for="p in Employees" :key="p.id">
-                  <ProfileCard :employee="p" />
+                  <ProfileCard :employee="p" @employee-unlocked="handleEmployeeUnlocked" />
                </div>
             </div>
             <div v-else-if="filteredEmployees.length > 0">
                <div v-for="p in filteredEmployees" :key="p.id">
-                  <ProfileCard :employee="p" />
+                  <ProfileCard :employee="p" @employee-unlocked="handleEmployeeUnlocked" />
                </div>
             </div>
             <div v-else>
@@ -53,17 +53,22 @@
    // Refs for template
    const Employees = ref([]);
 
-   // Fetch all employees
+   // Fetch all employees with lockout status
    const fetchEmployees = async () => {
       const { data, error } = await supabase
          .from('Employees')
-         .select('*');
+         .select('*, failed_login_attempts, locked_until');
 
       Employees.value = data;
 
       if (error) {
          console.error(error);
       }
+   };
+
+   // Handle employee unlock event
+   const handleEmployeeUnlocked = () => {
+      fetchEmployees(); // Refresh the employee list
    };
 
    // Additional ref for storing filtered employees
