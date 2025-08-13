@@ -7,7 +7,7 @@ export default defineNuxtConfig({
   runtimeConfig: {
     // Server-side environment variables
     supabaseUrl: process.env.SUPABASE_URL,
-    supabaseServiceKey: process.env.SUPABASE_BYPASS_KEY,
+    supabaseServiceKey: process.env.SUPABASE_SERVICE_KEY,
     // Public environment variables (exposed to client-side)
     public: {
       supabaseUrl: process.env.SUPABASE_URL,

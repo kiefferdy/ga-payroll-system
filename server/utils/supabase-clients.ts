@@ -4,9 +4,24 @@
  */
 
 import type { H3Event, EventHandlerRequest } from 'h3'
-import { createError } from 'h3'
+import { createError, getCookie, getHeader } from 'h3'
 import { serverSupabaseUser, serverSupabaseClient, serverSupabaseServiceRole } from '#supabase/server'
 import { hasPermission, isUserAdmin } from '~/utils/permissions'
+
+/**
+ * Helper function to detect if a JWT token is a project key (anon or service role)
+ * Project keys don't have a 'sub' claim, which causes the "missing sub claim" error
+ */
+function looksLikeProjectKey(jwt?: string): boolean {
+  if (!jwt) return false
+  try {
+    const [, payload] = jwt.split('.')
+    const json = JSON.parse(Buffer.from(payload, 'base64').toString('utf8'))
+    return !json?.sub // project keys have no sub claim
+  } catch { 
+    return false 
+  }
+}
 
 /**
  * Get authenticated user from server request using @nuxtjs/supabase
@@ -14,8 +29,25 @@ import { hasPermission, isUserAdmin } from '~/utils/permissions'
  */
 export async function getUserFromRequest(event: H3Event<EventHandlerRequest>) {
   try {
-    const user = await serverSupabaseUser(event)
-    return { user, error: user ? null : 'No authenticated user' }
+    const cookieToken = getCookie(event, 'sb-access-token')
+    if (cookieToken) {
+      const supabase = await serverSupabaseClient(event)
+      const { data: { user }, error } = await supabase.auth.getUser(cookieToken)
+      if (error) throw error
+      return { user, error: null }
+    }
+
+    // Fallback to Authorization header only if it's a real user token
+    const auth = getHeader(event, 'authorization')
+    const bearer = auth?.startsWith('Bearer ') ? auth.slice(7) : undefined
+    if (bearer && !looksLikeProjectKey(bearer)) {
+      const supabase = await serverSupabaseClient(event)
+      const { data: { user }, error } = await supabase.auth.getUser(bearer)
+      if (error) throw error
+      return { user, error: null }
+    }
+
+    return { user: null, error: 'No authenticated user' }
   } catch (error: any) {
     console.error('Error getting user from request:', error?.message || error)
     return { user: null, error: 'Authentication failed' }
