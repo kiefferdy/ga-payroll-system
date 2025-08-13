@@ -29,76 +29,12 @@
          <!-- Header Section -->
          <div class="mb-8">
             <h1 class="text-3xl font-bold text-dark_gray mb-2">System Settings</h1>
-            <p class="text-dark_gray/70">Manage account credentials and system configurations</p>
+            <p class="text-dark_gray/70">Manage system configurations and security settings</p>
          </div>
 
          <!-- Settings Grid -->
-         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <!-- Account Credentials Section -->
-            <div class="bg-white rounded-xl shadow-sm border border-search_stroke_gray p-6">
-               <div class="flex items-center mb-6">
-                  <div class="w-10 h-10 bg-dark_green rounded-full flex items-center justify-center mr-3">
-                     <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                     </svg>
-                  </div>
-                  <div>
-                     <h2 class="text-xl font-semibold text-dark_gray">Account Credentials</h2>
-                     <p class="text-sm text-dark_gray/70">Update your account email and password</p>
-                  </div>
-               </div>
-
-               <div class="space-y-4">
-                  <div>
-                     <label for="company-email" class="block text-sm font-medium text-dark_gray mb-2">Account Email</label>
-                     <input 
-                        v-model="accountEmail" 
-                        id="company-email" 
-                        type="email" 
-                        placeholder="Enter new email" 
-                        class="w-full input input-bordered bg-primary_white border-search_stroke_gray focus:border-dark_green"
-                     >
-                  </div>
-
-                  <div>
-                     <label for="company-password" class="block text-sm font-medium text-dark_gray mb-2">New Password</label>
-                     <input 
-                        v-model="password" 
-                        id="company-password" 
-                        :type="passwordFieldType" 
-                        placeholder="Enter new password" 
-                        class="w-full input input-bordered bg-primary_white border-search_stroke_gray focus:border-dark_green"
-                     >
-                     <div class="flex items-center mt-2">
-                        <input type="checkbox" id="show-password" @click="hidePassword = !hidePassword" class="checkbox checkbox-sm mr-2" />
-                        <label for="show-password" class="text-sm text-dark_gray">Show Password</label>
-                     </div>
-                  </div>
-
-                  <button @click="initiatePasswordUpdate" class="btn bg-dark_green hover:bg-button_green text-white border-none w-full">
-                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                     </svg>
-                     Update Credentials
-                  </button>
-
-                  <!-- Success/Failure Notifications -->
-                  <div v-if="updateAccountSuccess" class="alert alert-success">
-                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                     </svg>
-                     <span>Credentials updated successfully! If you've changed your email, please check your new email for a confirmation link.</span>
-                  </div>
-                  <div v-if="updateAccountFailure" class="alert alert-error">
-                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                     </svg>
-                     <span>Unable to update credentials!</span>
-                  </div>
-               </div>
-            </div>
-
-            <!-- OTP Settings Section -->
+         <div class="space-y-8">
+            <!-- Password Policy Section -->
             <div class="bg-white rounded-xl shadow-sm border border-search_stroke_gray p-6">
                <div class="flex items-center mb-6">
                   <div class="w-10 h-10 bg-dark_green rounded-full flex items-center justify-center mr-3">
@@ -107,8 +43,161 @@
                      </svg>
                   </div>
                   <div>
-                     <h2 class="text-xl font-semibold text-dark_gray">Security Settings</h2>
-                     <p class="text-sm text-dark_gray/70">Configure two-factor authentication</p>
+                     <h2 class="text-xl font-semibold text-dark_gray">Password Policy</h2>
+                     <p class="text-sm text-dark_gray/70">Configure password complexity and security requirements</p>
+                  </div>
+               </div>
+
+               <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <div>
+                     <label for="password-min-length" class="block text-sm font-medium text-dark_gray mb-2">Minimum Password Length</label>
+                     <input 
+                        v-model.number="passwordMinLength" 
+                        id="password-min-length" 
+                        type="number" 
+                        min="4" 
+                        max="128" 
+                        class="w-full input input-bordered bg-primary_white border-search_stroke_gray focus:border-dark_green"
+                     >
+                  </div>
+
+                  <div>
+                     <label for="password-history" class="block text-sm font-medium text-dark_gray mb-2">Password History Count</label>
+                     <input 
+                        v-model.number="passwordHistoryCount" 
+                        id="password-history" 
+                        type="number" 
+                        min="0" 
+                        max="20" 
+                        class="w-full input input-bordered bg-primary_white border-search_stroke_gray focus:border-dark_green"
+                     >
+                  </div>
+
+                  <div>
+                     <label for="password-age-hours" class="block text-sm font-medium text-dark_gray mb-2">Password Age Minimum (Hours)</label>
+                     <input 
+                        v-model.number="passwordAgeMinHours" 
+                        id="password-age-hours" 
+                        type="number" 
+                        min="0" 
+                        max="168" 
+                        class="w-full input input-bordered bg-primary_white border-search_stroke_gray focus:border-dark_green"
+                     >
+                  </div>
+
+                  <div>
+                     <label for="password-expiration" class="block text-sm font-medium text-dark_gray mb-2">Password Expiration (Days, 0 = Never)</label>
+                     <input 
+                        v-model.number="passwordExpirationDays" 
+                        id="password-expiration" 
+                        type="number" 
+                        min="0" 
+                        max="365" 
+                        class="w-full input input-bordered bg-primary_white border-search_stroke_gray focus:border-dark_green"
+                     >
+                  </div>
+               </div>
+
+               <div class="mt-6 space-y-4">
+                  <div class="flex items-center justify-between p-4 bg-off_white rounded-lg">
+                     <div>
+                        <h3 class="font-medium text-dark_gray">Enable Password Complexity</h3>
+                        <p class="text-sm text-dark_gray/70">Enforce password complexity requirements</p>
+                     </div>
+                     <input v-model="enablePasswordComplexity" type="checkbox" class="toggle toggle-primary">
+                  </div>
+
+                  <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                     <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <span class="text-sm text-dark_gray">Require Uppercase</span>
+                        <input v-model="passwordRequireUppercase" type="checkbox" class="checkbox checkbox-sm">
+                     </div>
+                     <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <span class="text-sm text-dark_gray">Require Lowercase</span>
+                        <input v-model="passwordRequireLowercase" type="checkbox" class="checkbox checkbox-sm">
+                     </div>
+                     <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <span class="text-sm text-dark_gray">Require Numbers</span>
+                        <input v-model="passwordRequireNumbers" type="checkbox" class="checkbox checkbox-sm">
+                     </div>
+                     <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <span class="text-sm text-dark_gray">Require Special Chars</span>
+                        <input v-model="passwordRequireSpecialChars" type="checkbox" class="checkbox checkbox-sm">
+                     </div>
+                  </div>
+
+                  <div class="flex items-center justify-between p-4 bg-off_white rounded-lg">
+                     <div>
+                        <h3 class="font-medium text-dark_gray">Force Password Change on First Login</h3>
+                        <p class="text-sm text-dark_gray/70">Require new users to change their password when they first log in</p>
+                     </div>
+                     <input v-model="forcePasswordChangeFirstLogin" type="checkbox" class="toggle toggle-primary">
+                  </div>
+               </div>
+            </div>
+
+            <!-- Account Lockout Section -->
+            <div class="bg-white rounded-xl shadow-sm border border-search_stroke_gray p-6">
+               <div class="flex items-center mb-6">
+                  <div class="w-10 h-10 bg-dark_green rounded-full flex items-center justify-center mr-3">
+                     <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728L5.636 5.636m12.728 12.728L18.364 5.636M5.636 18.364l12.728-12.728" />
+                     </svg>
+                  </div>
+                  <div>
+                     <h2 class="text-xl font-semibold text-dark_gray">Account Lockout Settings</h2>
+                     <p class="text-sm text-dark_gray/70">Configure account lockout behavior for failed login attempts</p>
+                  </div>
+               </div>
+
+               <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <div>
+                     <label for="max-failed-attempts" class="block text-sm font-medium text-dark_gray mb-2">Maximum Failed Login Attempts</label>
+                     <input 
+                        v-model.number="maxFailedLoginAttempts" 
+                        id="max-failed-attempts" 
+                        type="number" 
+                        min="3" 
+                        max="20" 
+                        class="w-full input input-bordered bg-primary_white border-search_stroke_gray focus:border-dark_green"
+                     >
+                  </div>
+
+                  <div>
+                     <label for="lockout-duration" class="block text-sm font-medium text-dark_gray mb-2">Lockout Duration (Minutes)</label>
+                     <input 
+                        v-model.number="lockoutDurationMinutes" 
+                        id="lockout-duration" 
+                        type="number" 
+                        min="5" 
+                        max="1440" 
+                        class="w-full input input-bordered bg-primary_white border-search_stroke_gray focus:border-dark_green"
+                     >
+                  </div>
+               </div>
+
+               <div class="mt-6">
+                  <div class="flex items-center justify-between p-4 bg-off_white rounded-lg">
+                     <div>
+                        <h3 class="font-medium text-dark_gray">Auto-Unlock Accounts</h3>
+                        <p class="text-sm text-dark_gray/70">Automatically unlock accounts after the lockout period expires</p>
+                     </div>
+                     <input v-model="autoUnlockAccounts" type="checkbox" class="toggle toggle-primary">
+                  </div>
+               </div>
+            </div>
+
+            <!-- Two-Factor Authentication Section -->
+            <div class="bg-white rounded-xl shadow-sm border border-search_stroke_gray p-6">
+               <div class="flex items-center mb-6">
+                  <div class="w-10 h-10 bg-dark_green rounded-full flex items-center justify-center mr-3">
+                     <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                     </svg>
+                  </div>
+                  <div>
+                     <h2 class="text-xl font-semibold text-dark_gray">Two-Factor Authentication</h2>
+                     <p class="text-sm text-dark_gray/70">Configure two-factor authentication settings</p>
                   </div>
                </div>
 
@@ -155,121 +244,191 @@
                      </div>
                      <input v-model="otpEnable" id="otp-toggle" type="checkbox" class="toggle toggle-primary">
                   </div>
-
-                  <button @click="updateSettings" class="btn bg-dark_green hover:bg-button_green text-white border-none w-full">
-                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
-                     </svg>
-                     Update Security Settings
-                  </button>
-
-                  <!-- Success/Failure Notifications -->
-                  <div v-if="updateSuccess" class="alert alert-success">
-                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                     </svg>
-                     <span>Settings updated successfully!</span>
-                  </div>
-                  <div v-if="updateFailure" class="alert alert-error">
-                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                     </svg>
-                     <span>Unable to update settings!</span>
-                  </div>
                </div>
+            </div>
+         </div>
+
+         <!-- Global Settings Action Section -->
+         <div class="mt-8 bg-white rounded-xl shadow-sm border border-search_stroke_gray p-6">
+            <!-- Validation Error Notification -->
+            <div v-if="validationError" class="alert alert-warning mb-4">
+               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+               </svg>
+               <span>{{ validationError }}</span>
+            </div>
+
+            <!-- Success/Failure Notifications -->
+            <div v-if="updateSuccess" class="alert alert-success mb-4">
+               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+               </svg>
+               <span>All system settings updated successfully!</span>
+            </div>
+            <div v-if="updateFailure" class="alert alert-error mb-4">
+               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+               </svg>
+               <span>Unable to update system settings!</span>
+            </div>
+
+            <div class="text-center">
+               <h3 class="text-lg font-semibold text-dark_gray mb-2">Save Configuration</h3>
+               <p class="text-sm text-dark_gray/70 mb-4">Apply all changes to password policy, account lockout, and two-factor authentication settings.</p>
+               
+               <button @click="updateAllSettings" class="btn bg-dark_green hover:bg-button_green text-white border-none px-8 py-3 text-lg">
+                  <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                  </svg>
+                  Update All Settings
+               </button>
             </div>
          </div>
       </div>
    </div>
 
-   <!-- Re-authentication Modal -->
-   <ReAuthModal 
-      :show-modal="showReAuthModal"
-      :operation="currentOperation"
-      @authenticated="handleReAuthentication"
-      @cancelled="cancelReAuthentication"
-   />
 </template>
 
 
 <script setup>
-   import { ref } from 'vue';
+   import { ref, onMounted } from 'vue';
    import { useRouter } from 'vue-router';
    import { 
       checkUserAuthorization, 
-      logSecurityEvent, 
-      validatePasswordComplexity,
+      logSecurityEvent,
       validateEmail as validateEmailUtil,
-      logAuthenticationAttempt,
-      checkPasswordHistory,
-      validatePasswordAge
+      logAuthenticationAttempt
    } from '~/utils/security';
 
    const supabase = useSupabaseClient();
    const router = useRouter();
 
-   // Hide password functionality
-   const hidePassword = ref(true);
-   const password = ref("");
-   const passwordFieldType = computed(() => hidePassword.value ? "password" : "text");
 
-   // Account credentials input box controllers
-   const { data: { user } } = await supabase.auth.getUser(); // Gets the current user
-   const accountEmail = ref('');
-   if (user) {
-      accountEmail.value = user.email;
-   }
 
-   // Settings input box controllers
+   // OTP Settings controllers
    const otpEmail = ref('');
    const otpPhone = ref('');
    const otpEnable = ref(false);
    const otpChannel = ref('Email');
 
+   // Password Policy Settings
+   const passwordMinLength = ref(8);
+   const passwordRequireUppercase = ref(true);
+   const passwordRequireLowercase = ref(true);
+   const passwordRequireNumbers = ref(true);
+   const passwordRequireSpecialChars = ref(true);
+   const passwordHistoryCount = ref(5);
+   const passwordAgeMinHours = ref(24);
+   const forcePasswordChangeFirstLogin = ref(false);
+   const passwordExpirationDays = ref(90);
+   const enablePasswordComplexity = ref(true);
+
+   // Account Lockout Settings
+   const maxFailedLoginAttempts = ref(5);
+   const lockoutDurationMinutes = ref(30);
+   const autoUnlockAccounts = ref(true);
+
    // Success and failure notifs
    const updateSuccess = ref(false);
    const updateFailure = ref(false);
-   const updateAccountSuccess = ref(false);
-   const updateAccountFailure = ref(false);
+   const validationError = ref('');
 
-   // Re-authentication modal
-   const showReAuthModal = ref(false);
-   const currentOperation = ref('');
-   const pendingCredentials = ref({});
 
    // Function to fetch settings from Supabase
    const fetchSettings = async () => {
       const { data, error } = await supabase
          .from('Settings')
-         .select('otp_email, otp_phone, otp_enable, otp_channel')
+         .select(`
+            otp_email, otp_phone, otp_enable, otp_channel,
+            password_min_length, password_require_uppercase, password_require_lowercase,
+            password_require_numbers, password_require_special_chars, password_history_count,
+            password_age_min_hours, force_password_change_first_login, password_expiration_days,
+            enable_password_complexity, max_failed_login_attempts, lockout_duration_minutes,
+            auto_unlock_accounts
+         `)
          .single(); // There is only one row for the 'Settings' table.
 
       if (error) {
          console.error('Error fetching settings:', error);
       } else if (data) {
+         // OTP Settings
          otpEmail.value = data.otp_email || '';
          otpPhone.value = data.otp_phone || '';
          otpEnable.value = data.otp_enable || false;
-         otpChannel.value = data.otp_channel || '';
+         otpChannel.value = data.otp_channel || 'Email';
+
+         // Password Policy Settings
+         passwordMinLength.value = data.password_min_length || 8;
+         passwordRequireUppercase.value = data.password_require_uppercase ?? true;
+         passwordRequireLowercase.value = data.password_require_lowercase ?? true;
+         passwordRequireNumbers.value = data.password_require_numbers ?? true;
+         passwordRequireSpecialChars.value = data.password_require_special_chars ?? true;
+         passwordHistoryCount.value = data.password_history_count || 5;
+         passwordAgeMinHours.value = data.password_age_min_hours || 24;
+         forcePasswordChangeFirstLogin.value = data.force_password_change_first_login || false;
+         passwordExpirationDays.value = data.password_expiration_days || 90;
+         enablePasswordComplexity.value = data.enable_password_complexity ?? true;
+
+         // Account Lockout Settings
+         maxFailedLoginAttempts.value = data.max_failed_login_attempts || 5;
+         lockoutDurationMinutes.value = data.lockout_duration_minutes || 30;
+         autoUnlockAccounts.value = data.auto_unlock_accounts ?? true;
       }
    };
 
-   // Function to update settings in Supabase
-   const updateSettings = async () => {
+   // Function to update all settings in Supabase
+   const updateAllSettings = async () => {
+      // Clear previous validation errors
+      validationError.value = '';
+      
+      // Validate OTP settings
       if (!isValidEmail(otpEmail.value)) {
-         alert("Please enter a valid OTP email address.");
+         validationError.value = "Please enter a valid OTP email address.";
          return;
       }
       if (!isValidPhoneNumber(otpPhone.value)) {
-         alert("Please enter a valid phone number.");
+         validationError.value = "Please enter a valid phone number.";
+         return;
+      }
+
+      // Validate numeric settings
+      if (passwordMinLength.value < 4 || passwordMinLength.value > 128) {
+         validationError.value = "Password minimum length must be between 4 and 128 characters.";
+         return;
+      }
+      if (maxFailedLoginAttempts.value < 3 || maxFailedLoginAttempts.value > 20) {
+         validationError.value = "Maximum failed login attempts must be between 3 and 20.";
+         return;
+      }
+      if (lockoutDurationMinutes.value < 5 || lockoutDurationMinutes.value > 1440) {
+         validationError.value = "Lockout duration must be between 5 and 1440 minutes (24 hours).";
          return;
       }
 
       const updates = {
+         // OTP Settings
          otp_email: otpEmail.value,
          otp_phone: otpPhone.value,
          otp_enable: otpEnable.value,
          otp_channel: otpChannel.value,
+
+         // Password Policy Settings
+         password_min_length: passwordMinLength.value,
+         password_require_uppercase: passwordRequireUppercase.value,
+         password_require_lowercase: passwordRequireLowercase.value,
+         password_require_numbers: passwordRequireNumbers.value,
+         password_require_special_chars: passwordRequireSpecialChars.value,
+         password_history_count: passwordHistoryCount.value,
+         password_age_min_hours: passwordAgeMinHours.value,
+         force_password_change_first_login: forcePasswordChangeFirstLogin.value,
+         password_expiration_days: passwordExpirationDays.value,
+         enable_password_complexity: enablePasswordComplexity.value,
+
+         // Account Lockout Settings
+         max_failed_login_attempts: maxFailedLoginAttempts.value,
+         lockout_duration_minutes: lockoutDurationMinutes.value,
+         auto_unlock_accounts: autoUnlockAccounts.value,
+
          last_updated: new Date()
       };
 
@@ -284,146 +443,25 @@
          updateFailure.value = true; // Display fail notif
          setTimeout(() => updateFailure.value = false, 5000); // Hides notif after 5 seconds
       } else {
-         console.log('Project settings successfully updated!');
+         console.log('System settings successfully updated!');
          updateSuccess.value = true; // Display success notif
          updateFailure.value = false;
+         validationError.value = ''; // Clear any validation errors
          setTimeout(() => updateSuccess.value = false, 5000); // Hides notif after 5 seconds
+
+         // Log the settings update
+         await logSecurityEvent({
+            eventType: 'SYSTEM_SETTINGS_UPDATED',
+            details: {
+               updated_fields: Object.keys(updates).filter(key => key !== 'last_updated')
+            },
+            severity: 'LOW'
+         });
       }
    };
 
-   // Function to initiate password update with re-authentication
-   const initiatePasswordUpdate = async () => {
-      // Validate inputs first
-      if (!isValidEmail(accountEmail.value)) {
-         alert("Please enter a valid email address.");
-         return;
-      }
 
-      // If password is being changed, validate complexity
-      if (password.value) {
-         const passwordValidation = validatePasswordComplexity(password.value);
-         if (!passwordValidation.valid) {
-            alert(`Password does not meet complexity requirements:\n${passwordValidation.errors.join('\n')}`);
-            return;
-         }
 
-         // Check password age restriction (24 hour minimum)
-         const { data: { user } } = await supabase.auth.getUser();
-         if (user) {
-            const ageValidation = await validatePasswordAge(user.id);
-            if (!ageValidation.canChange) {
-               alert(`Password age restriction: ${ageValidation.error}`);
-               return;
-            }
-
-            // Check password history to prevent reuse
-            const historyCheck = await checkPasswordHistory(user.id, password.value);
-            if (historyCheck.isReused) {
-               alert(historyCheck.error || 'This password has been used recently. Please choose a different password.');
-               return;
-            }
-         }
-      }
-
-      // Store pending credentials
-      pendingCredentials.value = {
-         email: accountEmail.value,
-         password: password.value
-      };
-
-      // Show re-authentication modal
-      currentOperation.value = 'password/email change';
-      showReAuthModal.value = true;
-   };
-
-   // Handle successful re-authentication
-   const handleReAuthentication = async (authData) => {
-      showReAuthModal.value = false;
-      
-      try {
-         const updates = {
-            email: pendingCredentials.value.email
-         };
-
-         // Only include password if it's being changed
-         if (pendingCredentials.value.password) {
-            updates.password = pendingCredentials.value.password;
-         }
-
-         const { error } = await supabase.auth.updateUser(updates);
-
-         if (error) {
-            // Log credential update failure
-            await logSecurityEvent({
-               eventType: 'CREDENTIAL_UPDATE_FAILED',
-               userId: authData.userId,
-               userEmail: authData.email,
-               details: { 
-                  operation: 'credential update',
-                  error: error.message,
-                  newEmail: pendingCredentials.value.email
-               },
-               severity: 'HIGH'
-            });
-
-            console.error('Error updating account credentials:', error);
-            updateAccountSuccess.value = false;
-            updateAccountFailure.value = true;
-            setTimeout(() => updateAccountFailure.value = false, 5000);
-         } else {
-            // If password was changed, store it in history and update timestamp
-            if (pendingCredentials.value.password) {
-               try {
-                  await $fetch('/api/store-password-history', {
-                     method: 'POST',
-                     body: {
-                        userId: authData.userId,
-                        newPassword: pendingCredentials.value.password
-                     }
-                  });
-               } catch (historyError) {
-                  console.error('Failed to store password history:', historyError);
-                  // Don't fail the entire operation, just log it
-               }
-            }
-
-            // Log successful credential update
-            await logSecurityEvent({
-               eventType: 'CREDENTIALS_UPDATED',
-               userId: authData.userId,
-               userEmail: authData.email,
-               details: { 
-                  operation: 'credential update',
-                  newEmail: pendingCredentials.value.email,
-                  passwordChanged: !!pendingCredentials.value.password
-               },
-               severity: 'LOW'
-            });
-
-            console.log('Account credentials successfully updated');
-            updateAccountSuccess.value = true;
-            updateAccountFailure.value = false;
-            
-            // Clear password field for security
-            password.value = '';
-            
-            setTimeout(() => updateAccountSuccess.value = false, 10000);
-         }
-      } catch (error) {
-         console.error('Error during credential update:', error);
-         updateAccountFailure.value = true;
-         setTimeout(() => updateAccountFailure.value = false, 5000);
-      }
-
-      // Clear pending credentials
-      pendingCredentials.value = {};
-   };
-
-   // Handle re-authentication cancellation
-   const cancelReAuthentication = () => {
-      showReAuthModal.value = false;
-      pendingCredentials.value = {};
-   };
 
    // Enhanced validation functions using centralized utilities
    function isValidEmail(email) {
@@ -436,60 +474,80 @@
       return regex.test(phoneNumber) && phoneNumber.length >= 8 && phoneNumber.length <= 16;
    }
 
-   // Enhanced user authorization check
+   // Enhanced user authorization check (client-side only)
    const verifyUserRank = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      // Only run on client-side to avoid SSR issues
+      if (process.server) return;
+      
+      try {
+         const { data: { user } } = await supabase.auth.getUser();
 
-      if (!user) {
-         await logSecurityEvent({
-            eventType: 'UNAUTHORIZED_PAGE_ACCESS',
-            resourceAccessed: '/settings',
-            details: { reason: 'No authenticated user' },
-            severity: 'HIGH'
-         });
-         router.push('/login');
-         return;
-      }
+         if (!user) {
+            await logSecurityEvent({
+               eventType: 'UNAUTHORIZED_PAGE_ACCESS',
+               resourceAccessed: '/settings',
+               details: { reason: 'No authenticated user' },
+               severity: 'HIGH'
+            });
+            await router.push('/login');
+            return;
+         }
 
-      const authCheck = await checkUserAuthorization(user.id, ['Admin', 'Developer']);
-      if (!authCheck.authorized) {
-         alert('You do not have permission to view this page!');
-         router.push('/');
+         const authCheck = await checkUserAuthorization(user.id, ['Admin', 'Developer']);
+         if (!authCheck.authorized) {
+            console.error('Unauthorized access attempt to settings page');
+            await router.push('/');
+         }
+      } catch (error) {
+         console.error('Authorization check failed:', error);
+         await router.push('/login');
       }
    }
 
    // Enhanced logout function with security logging
    const logout = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      // Only run on client-side
+      if (process.server) return;
       
-      const { error } = await supabase.auth.signOut();
-      if (error) {
-         console.error("Error logging out:", error);
+      try {
+         const { data: { user } } = await supabase.auth.getUser();
          
-         // Log logout failure
-         await logSecurityEvent({
-            eventType: 'LOGOUT_FAILED',
-            userId: user?.id,
-            userEmail: user?.email,
-            details: { error: error.message },
-            severity: 'MEDIUM'
-         });
-      } else {
-         // Log successful logout
-         await logAuthenticationAttempt(
-            'LOGOUT',
-            user?.email || 'unknown',
-            user?.id,
-            undefined,
-            navigator.userAgent
-         );
-         
-         router.push('/login');
+         const { error } = await supabase.auth.signOut();
+         if (error) {
+            console.error("Error logging out:", error);
+            
+            // Log logout failure
+            await logSecurityEvent({
+               eventType: 'LOGOUT_FAILED',
+               userId: user?.id,
+               userEmail: user?.email,
+               details: { error: error.message },
+               severity: 'MEDIUM'
+            });
+         } else {
+            // Log successful logout
+            await logAuthenticationAttempt(
+               'LOGOUT',
+               user?.email || 'unknown',
+               user?.id,
+               undefined,
+               navigator.userAgent
+            );
+            
+            await router.push('/login');
+         }
+      } catch (error) {
+         console.error('Logout error:', error);
+         await router.push('/login');
       }
    };
 
    // Functions to be run once page loads
    fetchSettings();
-   verifyUserRank();
+   
+   // Only run auth check on client-side after mount
+   onMounted(() => {
+      verifyUserRank();
+   });
 
 </script>

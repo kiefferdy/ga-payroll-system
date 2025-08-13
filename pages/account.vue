@@ -306,6 +306,7 @@
    // Password validation
    const passwordErrors = ref([]);
    const passwordStrength = ref('');
+   const passwordPolicySettings = ref(null);
 
    // Employment information (read-only)
    const employmentRank = ref('');
@@ -351,15 +352,92 @@
       }
    });
 
-   // Validate password as user types
+   // Validate password as user types using cached settings
    const validatePasswordOnChange = () => {
-      if (newPassword.value) {
-         const validation = validatePasswordComplexity(newPassword.value);
-         passwordErrors.value = validation.errors;
-         passwordStrength.value = validation.strength;
+      if (newPassword.value && passwordPolicySettings.value) {
+         const settings = passwordPolicySettings.value;
+         const errors = [];
+         let score = 0;
+
+         // If password complexity is disabled, only check minimum length
+         if (!settings.enableComplexity) {
+            if (newPassword.value.length < settings.minLength) {
+               errors.push(`Password must be at least ${settings.minLength} characters long`);
+            } else {
+               score = 3; // Consider it medium strength
+            }
+         } else {
+            // Minimum length check
+            if (newPassword.value.length < settings.minLength) {
+               errors.push(`Password must be at least ${settings.minLength} characters long`);
+            } else {
+               score += 1;
+            }
+
+            // Complexity checks
+            if (settings.requireUppercase && !/[A-Z]/.test(newPassword.value)) {
+               errors.push('Password must contain at least one uppercase letter');
+            } else if (settings.requireUppercase) {
+               score += 1;
+            }
+
+            if (settings.requireLowercase && !/[a-z]/.test(newPassword.value)) {
+               errors.push('Password must contain at least one lowercase letter');
+            } else if (settings.requireLowercase) {
+               score += 1;
+            }
+
+            if (settings.requireNumbers && !/\d/.test(newPassword.value)) {
+               errors.push('Password must contain at least one number');
+            } else if (settings.requireNumbers) {
+               score += 1;
+            }
+
+            if (settings.requireSpecialChars && !/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\?]/.test(newPassword.value)) {
+               errors.push('Password must contain at least one special character (!@#$%^&*)');
+            } else if (settings.requireSpecialChars) {
+               score += 1;
+            }
+
+            // Common passwords check
+            const commonPasswords = ['password', '123456', 'qwerty', 'admin', 'welcome'];
+            if (commonPasswords.some(common => newPassword.value.toLowerCase().includes(common))) {
+               errors.push('Password contains common words and is not secure');
+               score -= 1;
+            }
+         }
+
+         passwordErrors.value = errors;
+         
+         const maxScore = 1 + // length
+            (settings.requireUppercase ? 1 : 0) +
+            (settings.requireLowercase ? 1 : 0) +
+            (settings.requireNumbers ? 1 : 0) +
+            (settings.requireSpecialChars ? 1 : 0);
+         
+         passwordStrength.value = score >= maxScore - 1 ? 'STRONG' : score >= Math.floor(maxScore / 2) ? 'MEDIUM' : 'WEAK';
       } else {
          passwordErrors.value = [];
          passwordStrength.value = '';
+      }
+   };
+
+   // Fetch password policy settings
+   const fetchPasswordPolicySettings = async () => {
+      try {
+         const response = await $fetch('/api/get-password-policy-settings');
+         passwordPolicySettings.value = response;
+      } catch (error) {
+         console.error('Error fetching password policy settings:', error);
+         // Use defaults if fetch fails
+         passwordPolicySettings.value = {
+            minLength: 8,
+            requireUppercase: true,
+            requireLowercase: true,
+            requireNumbers: true,
+            requireSpecialChars: true,
+            enableComplexity: true
+         };
       }
    };
 
@@ -474,7 +552,7 @@
       }
 
       // Password change requires validation and re-authentication
-      const passwordValidation = validatePasswordComplexity(newPassword.value);
+      const passwordValidation = await validatePasswordComplexity(newPassword.value);
       if (!passwordValidation.valid) {
          alert(`Password does not meet complexity requirements:\n${passwordValidation.errors.join('\n')}`);
          return;
@@ -571,7 +649,6 @@
 
    // Logout function
    const logout = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
       const { error } = await supabase.auth.signOut();
       
       if (error) {
@@ -583,4 +660,5 @@
 
    // Initialize page
    fetchUserData();
+   fetchPasswordPolicySettings();
 </script>

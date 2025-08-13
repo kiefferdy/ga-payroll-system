@@ -106,48 +106,98 @@ export async function logValidationFailure(
 }
 
 /**
- * Password complexity validation
+ * Fetch password policy settings from database
  */
-export function validatePasswordComplexity(password: string): {
+export async function getPasswordPolicySettings(): Promise<{
+  minLength: number
+  requireUppercase: boolean
+  requireLowercase: boolean
+  requireNumbers: boolean
+  requireSpecialChars: boolean
+  enableComplexity: boolean
+}> {
+  try {
+    const response = await $fetch('/api/get-password-policy-settings')
+    return response as {
+      minLength: number
+      requireUppercase: boolean
+      requireLowercase: boolean
+      requireNumbers: boolean
+      requireSpecialChars: boolean
+      enableComplexity: boolean
+    }
+  } catch (error) {
+    console.error('Error fetching password policy settings:', error)
+    // Return defaults if API fails
+    return {
+      minLength: 8,
+      requireUppercase: true,
+      requireLowercase: true,
+      requireNumbers: true,
+      requireSpecialChars: true,
+      enableComplexity: true
+    }
+  }
+}
+
+/**
+ * Password complexity validation with configurable settings
+ */
+export async function validatePasswordComplexity(password: string): Promise<{
   valid: boolean
   errors: string[]
   strength: 'WEAK' | 'MEDIUM' | 'STRONG'
-} {
+}> {
+  const settings = await getPasswordPolicySettings()
   const errors: string[] = []
   let score = 0
 
+  // If password complexity is disabled, only check minimum length
+  if (!settings.enableComplexity) {
+    if (password.length < settings.minLength) {
+      errors.push(`Password must be at least ${settings.minLength} characters long`)
+    } else {
+      score = 3 // Consider it medium strength if it meets minimum length
+    }
+    return {
+      valid: errors.length === 0,
+      errors,
+      strength: score >= 3 ? 'MEDIUM' : 'WEAK'
+    }
+  }
+
   // Minimum length check
-  if (password.length < 8) {
-    errors.push('Password must be at least 8 characters long')
+  if (password.length < settings.minLength) {
+    errors.push(`Password must be at least ${settings.minLength} characters long`)
   } else {
     score += 1
   }
 
   // Uppercase letter check
-  if (!/[A-Z]/.test(password)) {
+  if (settings.requireUppercase && !/[A-Z]/.test(password)) {
     errors.push('Password must contain at least one uppercase letter')
-  } else {
+  } else if (settings.requireUppercase) {
     score += 1
   }
 
   // Lowercase letter check
-  if (!/[a-z]/.test(password)) {
+  if (settings.requireLowercase && !/[a-z]/.test(password)) {
     errors.push('Password must contain at least one lowercase letter')
-  } else {
+  } else if (settings.requireLowercase) {
     score += 1
   }
 
   // Number check
-  if (!/\d/.test(password)) {
+  if (settings.requireNumbers && !/\d/.test(password)) {
     errors.push('Password must contain at least one number')
-  } else {
+  } else if (settings.requireNumbers) {
     score += 1
   }
 
   // Special character check
-  if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\?]/.test(password)) {
+  if (settings.requireSpecialChars && !/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\?]/.test(password)) {
     errors.push('Password must contain at least one special character (!@#$%^&*)')
-  } else {
+  } else if (settings.requireSpecialChars) {
     score += 1
   }
 
@@ -158,7 +208,13 @@ export function validatePasswordComplexity(password: string): {
     score -= 1
   }
 
-  const strength = score >= 4 ? 'STRONG' : score >= 2 ? 'MEDIUM' : 'WEAK'
+  const maxScore = 1 + // length
+    (settings.requireUppercase ? 1 : 0) +
+    (settings.requireLowercase ? 1 : 0) +
+    (settings.requireNumbers ? 1 : 0) +
+    (settings.requireSpecialChars ? 1 : 0)
+  
+  const strength = score >= maxScore - 1 ? 'STRONG' : score >= Math.floor(maxScore / 2) ? 'MEDIUM' : 'WEAK'
 
   return {
     valid: errors.length === 0,
@@ -166,6 +222,7 @@ export function validatePasswordComplexity(password: string): {
     strength
   }
 }
+
 
 /**
  * Input validation utilities

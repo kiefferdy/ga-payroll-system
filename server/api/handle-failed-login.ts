@@ -1,10 +1,6 @@
 import { defineEventHandler } from 'h3';
 import { getServiceRoleClient } from '../utils/supabase-clients';
 
-// Configuration
-const MAX_FAILED_ATTEMPTS = 5;
-const LOCKOUT_DURATION_MINUTES = 30;
-
 export default defineEventHandler(async (event) => {
     try {
         const body = await readBody(event);
@@ -55,6 +51,10 @@ export default defineEventHandler(async (event) => {
             return { success: false, error: 'Failed to update login attempts' };
         }
 
+        // Fetch current lockout settings
+        const lockoutSettings = await $fetch('/api/get-lockout-settings');
+        const { maxFailedAttempts, lockoutDurationMinutes } = lockoutSettings;
+
         const currentFailedAttempts = currentData?.failed_login_attempts || 0;
         const newFailedAttempts = currentFailedAttempts + 1;
 
@@ -63,9 +63,9 @@ export default defineEventHandler(async (event) => {
         };
 
         // Lock account if max attempts reached
-        if (newFailedAttempts >= MAX_FAILED_ATTEMPTS) {
+        if (newFailedAttempts >= maxFailedAttempts) {
             const lockUntil = new Date();
-            lockUntil.setMinutes(lockUntil.getMinutes() + LOCKOUT_DURATION_MINUTES);
+            lockUntil.setMinutes(lockUntil.getMinutes() + lockoutDurationMinutes);
             updateData.locked_until = lockUntil.toISOString();
 
             // Log account lockout using RLS logging
@@ -78,7 +78,8 @@ export default defineEventHandler(async (event) => {
                     details: {
                         failed_attempts: newFailedAttempts,
                         locked_until: lockUntil.toISOString(),
-                        lockout_duration_minutes: LOCKOUT_DURATION_MINUTES
+                        lockout_duration_minutes: lockoutDurationMinutes,
+                        max_attempts_threshold: maxFailedAttempts
                     },
                     severity: 'HIGH'
                 }
@@ -105,17 +106,17 @@ export default defineEventHandler(async (event) => {
                 userEmail: email,
                 details: {
                     failed_attempts: newFailedAttempts,
-                    max_attempts: MAX_FAILED_ATTEMPTS,
-                    will_lock: newFailedAttempts >= MAX_FAILED_ATTEMPTS
+                    max_attempts: maxFailedAttempts,
+                    will_lock: newFailedAttempts >= maxFailedAttempts
                 },
-                severity: newFailedAttempts >= MAX_FAILED_ATTEMPTS ? 'HIGH' : 'MEDIUM'
+                severity: newFailedAttempts >= maxFailedAttempts ? 'HIGH' : 'MEDIUM'
             }
         });
 
         return { 
             success: true, 
             failed_attempts: newFailedAttempts,
-            is_locked: newFailedAttempts >= MAX_FAILED_ATTEMPTS
+            is_locked: newFailedAttempts >= maxFailedAttempts
         };
 
     } catch (error) {
