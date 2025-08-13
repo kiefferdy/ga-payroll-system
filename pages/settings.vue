@@ -287,6 +287,13 @@
       </div>
    </div>
 
+   <!-- Re-authentication Modal -->
+   <ReAuthModal 
+      :show-modal="showReAuthModal"
+      :operation="currentOperation"
+      @authenticated="handleReAuthentication"
+      @cancelled="cancelReAuthentication"
+   />
 </template>
 
 
@@ -302,6 +309,11 @@
 
    const supabase = useSupabaseClient();
    const router = useRouter();
+
+   // Re-authentication modal state
+   const showReAuthModal = ref(false);
+   const currentOperation = ref('');
+   const pendingUpdates = ref({});
 
 
 
@@ -376,7 +388,7 @@
       }
    };
 
-   // Function to update all settings in Supabase
+   // Initiate settings update (requires re-authentication for system settings changes)
    const updateAllSettings = async () => {
       // Clear previous validation errors
       validationError.value = '';
@@ -405,7 +417,8 @@
          return;
       }
 
-      const updates = {
+      // Store pending updates and show re-authentication modal
+      pendingUpdates.value = {
          // OTP Settings
          otp_email: otpEmail.value,
          otp_phone: otpPhone.value,
@@ -432,32 +445,74 @@
          last_updated: new Date()
       };
 
-      const { error } = await supabase
-         .from('Settings')
-         .update(updates)
-         .match({ id: 1 });
+      currentOperation.value = 'system settings update';
+      showReAuthModal.value = true;
+   };
 
-      if (error) {
+   // Perform the actual settings update after re-authentication
+   const performSettingsUpdate = async () => {
+      try {
+         const { error } = await supabase
+            .from('Settings')
+            .update(pendingUpdates.value)
+            .match({ id: 1 });
+
+         if (error) {
+            console.error('Error updating settings:', error);
+            updateSuccess.value = false;
+            updateFailure.value = true; // Display fail notif
+            setTimeout(() => updateFailure.value = false, 5000); // Hides notif after 5 seconds
+         } else {
+            console.log('System settings successfully updated!');
+            updateSuccess.value = true; // Display success notif
+            updateFailure.value = false;
+            validationError.value = ''; // Clear any validation errors
+            setTimeout(() => updateSuccess.value = false, 5000); // Hides notif after 5 seconds
+
+            // Log the settings update
+            await logSecurityEvent({
+               eventType: 'SYSTEM_SETTINGS_UPDATED',
+               details: {
+                  updated_fields: Object.keys(pendingUpdates.value).filter(key => key !== 'last_updated')
+               },
+               severity: 'LOW'
+            });
+         }
+      } catch (error) {
          console.error('Error updating settings:', error);
-         updateSuccess.value = false;
-         updateFailure.value = true; // Display fail notif
-         setTimeout(() => updateFailure.value = false, 5000); // Hides notif after 5 seconds
-      } else {
-         console.log('System settings successfully updated!');
-         updateSuccess.value = true; // Display success notif
-         updateFailure.value = false;
-         validationError.value = ''; // Clear any validation errors
-         setTimeout(() => updateSuccess.value = false, 5000); // Hides notif after 5 seconds
+         updateFailure.value = true;
+         setTimeout(() => updateFailure.value = false, 5000);
+      }
+   };
 
-         // Log the settings update
+   // Handle successful re-authentication
+   const handleReAuthentication = async (authData) => {
+      showReAuthModal.value = false;
+      
+      try {
+         await performSettingsUpdate();
+         
+         // Log successful re-authentication for settings update
          await logSecurityEvent({
-            eventType: 'SYSTEM_SETTINGS_UPDATED',
-            details: {
-               updated_fields: Object.keys(updates).filter(key => key !== 'last_updated')
-            },
+            eventType: 'RE_AUTHENTICATION_SUCCESS',
+            userId: authData.userId,
+            userEmail: authData.email,
+            details: { operation: currentOperation.value },
             severity: 'LOW'
          });
+      } catch (error) {
+         console.error('Error after re-authentication:', error);
+         updateFailure.value = true;
+         setTimeout(() => updateFailure.value = false, 5000);
+      } finally {
+         pendingUpdates.value = {};
       }
+   };
+
+   // Handle re-authentication cancellation
+   const cancelReAuthentication = () => {
+      showReAuthModal.value = false;
+      pendingUpdates.value = {};
    };
 
 
