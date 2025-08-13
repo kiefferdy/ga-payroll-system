@@ -154,12 +154,8 @@
             }
          };
 
-         // Logout function
-         const { enhancedLogout } = useAuthCleanup()
-         
-         const logout = async () => {
-            await enhancedLogout()
-         };
+         // Simplified logout function
+         const { logout } = useAuth()
 
          // Get server time function
          const getServerTime = async () => {

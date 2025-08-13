@@ -159,8 +159,8 @@
    // Refs for template
    const Employees = ref([]);
 
-   // Import auth cleanup utilities
-   const { emergencyAuthReset } = useAuthCleanup()
+   // Import simplified auth utilities
+   const { logout } = useAuth()
    
    // Fetch all employees with their roles
    const fetchEmployees = async () => {
@@ -170,18 +170,11 @@
       } catch (error) {
          console.error('Error loading employees:', error)
          
-         // Handle authentication errors
+         // Handle authentication errors - use logout for all cleanup
          if (error?.status === 401 || error?.statusMessage?.includes('Authentication')) {
-            // Check if it's a JWT corruption issue
-            if (error?.statusMessage?.includes('claim') || error?.statusMessage?.includes('JWT')) {
-               console.log('JWT token corruption detected, triggering auth reset');
-               await emergencyAuthReset();
-               return;
-            } else {
-               console.log('Authentication expired, redirecting to login');
-               await router.push('/login');
-               return;
-            }
+            console.log('Authentication error detected, logging out');
+            logout();
+            return;
          }
          
          Employees.value = []
@@ -281,15 +274,6 @@
       }
    }
 
-   // Logout function
-   const logout = async () => {
-      const { error } = await supabase.auth.signOut();
-      if (error) {
-         console.error("Error logging out:", error);
-      } else {
-         router.push('/login');
-      }
-   };
 
    // Watch for route changes to handle soft refresh
    const route = useRoute();

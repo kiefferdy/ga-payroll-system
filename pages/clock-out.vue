@@ -154,15 +154,8 @@
             }
          };
 
-         // Logout function
-         const logout = async () => {
-            const { error } = await supabase.auth.signOut();
-            if (error) {
-               console.error("Error logging out:", error);
-            } else {
-               router.push('/login');
-            }
-         };
+         // Simplified logout function
+         const { logout } = useAuth();
 
          // Get server time function
          const getServerTime = async () => {

@@ -809,13 +809,9 @@ async function saveUserRoles() {
   }
 }
 
-// Enhanced logout function
+// Simplified logout function  
 const router = useRouter()
-const { enhancedLogout } = useAuthCleanup()
-
-const logout = async () => {
-  await enhancedLogout()
-}
+const { logout } = useAuth()
 
 // Initialize data when component mounts
 onMounted(async () => {

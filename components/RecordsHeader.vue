@@ -268,42 +268,8 @@ const formatCurrency = (amount: number): string => {
   }).format(Math.abs(amount));
 };
 
-// Enhanced logout function with security logging
-const logout = async () => {
-  try {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      console.error("Error logging out:", error);
-
-      // Log logout failure
-      await logSecurityEvent({
-        eventType: "LOGOUT_FAILED",
-        userId: user?.id,
-        userEmail: user?.email,
-        details: { error: error.message },
-        severity: "MEDIUM",
-      });
-    } else {
-      // Log successful logout
-      await logAuthenticationAttempt(
-        "LOGOUT",
-        user?.email || "unknown",
-        user?.id,
-        undefined,
-        navigator.userAgent,
-      );
-
-      await router.push("/login");
-    }
-  } catch (error) {
-    console.error("Logout error:", error);
-    await router.push("/login");
-  }
-};
+// Simplified logout function
+const { logout } = useAuth();
 
 // Page is already protected by auth.global.ts middleware with proper permissions
 
