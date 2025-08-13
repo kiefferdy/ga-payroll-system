@@ -1,45 +1,140 @@
 <template>
    <Title>Admin - Employees</Title>
-   <div class="card card-side h-[37rem] w-[65rem] bg-dark_green text-black">
-      <div class="card h-[37rem] w-[55rem] bg-primary_white rounded rounded-l-[1rem] rounded-tr-[0rem] rounded-br-[1rem]">
-         <div class="card card-side  mx-10 mt-5 justify-between">
-            <div class="join">
-               <input type="text" v-model="searchBar" @keypress="search" placeholder="Search..." class="input input-sm bg-primary_white border-search_stroke_gray rounded rounded-l-full w-60"/>
-               <button @click="search" class="btn btn-sm btn-ghost bg-dark_green w-10 rounded rounded-r-full btn-round">
-                  <img src="~/assets/icons/search.png">
-               </button>
+   <div class="min-h-screen bg-primary_white">
+      <!-- Top Navigation -->
+      <div class="bg-dark_green text-white px-6 py-4">
+         <div class="flex justify-between items-center">
+            <div class="flex items-center space-x-6">
+               <NuxtLink to="/" class="flex items-center space-x-2 hover:text-primary_green transition-colors">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                  </svg>
+                  <span>Back to Dashboard</span>
+               </NuxtLink>
+               <nav class="flex space-x-6">
+                  <NuxtLink to="/employees" class="px-3 py-2 bg-primary_white text-dark_green rounded-lg font-semibold">Employees</NuxtLink>
+                  <NuxtLink to="/records" class="px-3 py-2 hover:bg-button_green transition-colors rounded-lg">Records</NuxtLink>
+                  <NuxtLink to="/settings" class="px-3 py-2 hover:bg-button_green transition-colors rounded-lg">Settings</NuxtLink>
+               </nav>
             </div>
-            <div>
-               <NuxtLink to="/create-account"><button class="btn btn-sm bg-dark_green btn-ghost text-white rounded-full capitalize"><img src="~/assets/icons/add.png" class="w-4">Add Account</button></NuxtLink>
-            </div> 
+            <button @click="logout" class="flex items-center space-x-2 hover:bg-button_green px-3 py-2 rounded-lg transition-colors">
+               <span>Logout</span>
+               <img class="w-4 h-4" src="~/assets/icons/exit_white.png">
+            </button>
          </div>
-         <div>
-            <div v-if="filteredEmployees.length == 0">
-               <div v-for="p in Employees" :key="p.id">
-                  <ProfileCard :employee="p" @employee-unlocked="handleEmployeeUnlocked" />
+      </div>
+
+      <!-- Main Content -->
+      <div class="p-6 max-w-7xl mx-auto">
+         <!-- Header Section -->
+         <div class="mb-8">
+            <h1 class="text-3xl font-bold text-dark_gray mb-2">Employee Management</h1>
+            <p class="text-dark_gray/70">Manage and monitor your team members</p>
+         </div>
+
+         <!-- Stats Overview -->
+         <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white rounded-xl shadow-sm border border-search_stroke_gray p-6">
+               <div class="flex items-center justify-between">
+                  <div>
+                     <p class="text-sm text-dark_gray/70 mb-1">Total Employees</p>
+                     <p class="text-2xl font-bold text-dark_gray">{{ Employees.length }}</p>
+                  </div>
+                  <div class="w-12 h-12 bg-primary_green rounded-full flex items-center justify-center">
+                     <svg class="w-6 h-6 text-dark_green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+                     </svg>
+                  </div>
                </div>
             </div>
-            <div v-else-if="filteredEmployees.length > 0">
-               <div v-for="p in filteredEmployees" :key="p.id">
-                  <ProfileCard :employee="p" @employee-unlocked="handleEmployeeUnlocked" />
+            <div class="bg-white rounded-xl shadow-sm border border-search_stroke_gray p-6">
+               <div class="flex items-center justify-between">
+                  <div>
+                     <p class="text-sm text-dark_gray/70 mb-1">Clocked In</p>
+                     <p class="text-2xl font-bold text-clock_in_green">{{ clockedInCount }}</p>
+                  </div>
+                  <div class="w-12 h-12 bg-clock_in_green/10 rounded-full flex items-center justify-center">
+                     <div class="w-3 h-3 bg-clock_in_green rounded-full"></div>
+                  </div>
                </div>
             </div>
-            <div v-else>
-               <p class="flex self-center justify-center">No matching employees found.</p>
+            <div class="bg-white rounded-xl shadow-sm border border-search_stroke_gray p-6">
+               <div class="flex items-center justify-between">
+                  <div>
+                     <p class="text-sm text-dark_gray/70 mb-1">Clocked Out</p>
+                     <p class="text-2xl font-bold text-clock_out_red">{{ clockedOutCount }}</p>
+                  </div>
+                  <div class="w-12 h-12 bg-clock_out_red/10 rounded-full flex items-center justify-center">
+                     <div class="w-3 h-3 bg-clock_out_red rounded-full"></div>
+                  </div>
+               </div>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm border border-search_stroke_gray p-6">
+               <div class="flex items-center justify-between">
+                  <div>
+                     <p class="text-sm text-dark_gray/70 mb-1">Locked Accounts</p>
+                     <p class="text-2xl font-bold text-clock_out_red">{{ lockedAccountsCount }}</p>
+                  </div>
+                  <div class="w-12 h-12 bg-clock_out_red/10 rounded-full flex items-center justify-center">
+                     <svg class="w-6 h-6 text-clock_out_red" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                     </svg>
+                  </div>
+               </div>
+            </div>
+         </div>
+
+         <!-- Search and Filter Section -->
+         <div class="bg-white rounded-xl shadow-sm border border-search_stroke_gray p-6 mb-8">
+            <div class="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
+               <div class="flex-1 flex gap-4">
+                  <div class="flex-1 max-w-md">
+                     <div class="relative">
+                        <input 
+                           type="text" 
+                           v-model="searchBar" 
+                           @input="search" 
+                           placeholder="Search employees..."
+                           class="input input-bordered w-full pl-10 bg-primary_white border-search_stroke_gray focus:border-dark_green"
+                        />
+                        <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-dark_gray/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                     </div>
+                  </div>
+                  <select v-model="statusFilter" @change="applyFilters" class="select select-bordered bg-primary_white border-search_stroke_gray focus:border-dark_green">
+                     <option value="all">All Status</option>
+                     <option value="in">Clocked In</option>
+                     <option value="out">Clocked Out</option>
+                     <option value="locked">Locked</option>
+                  </select>
+               </div>
+               <NuxtLink to="/create-account">
+                  <button class="btn bg-dark_green hover:bg-button_green text-white border-none">
+                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                     </svg>
+                     Add Employee
+                  </button>
+               </NuxtLink>
+            </div>
+         </div>
+
+         <!-- Employee Grid -->
+         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div v-if="displayedEmployees.length === 0" class="col-span-full">
+               <div class="text-center py-12 bg-white rounded-xl border border-search_stroke_gray">
+                  <svg class="w-16 h-16 text-dark_gray/30 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                  <p class="text-lg text-dark_gray/70">{{ searchBar || statusFilter !== 'all' ? 'No employees match your filters' : 'No employees found' }}</p>
+               </div>
+            </div>
+            <div v-else v-for="employee in displayedEmployees" :key="employee.id">
+               <EmployeeCard :employee="employee" @employee-unlocked="handleEmployeeUnlocked" />
             </div>
          </div>
       </div>
-      <ul class="menu w-[10rem] p-0 font-bold text-white justify-between">
-         <div>
-            <li class="py-2 items-center"><NuxtLink to="/">← Back</NuxtLink></li>
-            <li class="active bg-primary_white rounded-r-[1rem] py-2 items-center text-black"><NuxtLink to="/employees">Employees</NuxtLink></li>
-            <li class="py-2 items-center"><NuxtLink to="/records">Records</NuxtLink></li>
-            <li class="py-2 items-center"><NuxtLink to="/settings">Settings</NuxtLink></li>
-         </div>
-         <div class="self-end mb-1">
-            <button @click="logout" class="font-bold btn btn-sm btn-ghost btn-circle w-28">Logout<img class="mx-2 w-4 h-4" src="~/assets/icons/exit_white.png"></button>
-         </div>
-      </ul>
    </div>
 </template>
 
@@ -53,13 +148,14 @@
    // Refs for template
    const Employees = ref([]);
 
-   // Fetch all employees with lockout status
+   // Fetch all employees with additional data
    const fetchEmployees = async () => {
       const { data, error } = await supabase
          .from('Employees')
-         .select('*, failed_login_attempts, locked_until');
+         .select('*, failed_login_attempts, locked_until')
+         .order('first_name', { ascending: true });
 
-      Employees.value = data;
+      Employees.value = data || [];
 
       if (error) {
          console.error(error);
@@ -71,22 +167,76 @@
       fetchEmployees(); // Refresh the employee list
    };
 
-   // Additional ref for storing filtered employees
+   // Additional refs for filtering and search
    const filteredEmployees = ref([]);
-   const searchBar = ref('')
+   const searchBar = ref('');
+   const statusFilter = ref('all');
+
+   // Computed properties for stats
+   const clockedInCount = computed(() => {
+      return Employees.value.filter(emp => emp.time_in_status === true).length;
+   });
+
+   const clockedOutCount = computed(() => {
+      return Employees.value.filter(emp => emp.time_in_status === false).length;
+   });
+
+   const lockedAccountsCount = computed(() => {
+      return Employees.value.filter(emp => {
+         if (!emp.locked_until) return false;
+         const lockExpiry = new Date(emp.locked_until);
+         const now = new Date();
+         return lockExpiry > now;
+      }).length;
+   });
+
+   // Computed property for displayed employees
+   const displayedEmployees = computed(() => {
+      let employees = filteredEmployees.value.length > 0 || searchBar.value ? filteredEmployees.value : Employees.value;
+      
+      // Apply status filter
+      if (statusFilter.value !== 'all') {
+         employees = employees.filter(emp => {
+            switch (statusFilter.value) {
+               case 'in':
+                  return emp.time_in_status === true;
+               case 'out':
+                  return emp.time_in_status === false;
+               case 'locked':
+                  if (!emp.locked_until) return false;
+                  const lockExpiry = new Date(emp.locked_until);
+                  const now = new Date();
+                  return lockExpiry > now;
+               default:
+                  return true;
+            }
+         });
+      }
+      
+      return employees;
+   });
 
    // Search function
    const search = () => {
-      // Convert search input to lowercase for case-insensitive search
       const searchTerm = searchBar.value.toLowerCase();
+      
+      if (!searchTerm) {
+         filteredEmployees.value = [];
+         return;
+      }
 
-      // Filter the employees based on the search criteria
-      filteredEmployees.value = Employees.value.filter((p) => {
-         const firstNameMatch = p.first_name.toLowerCase().includes(searchTerm);
-         const lastNameMatch = p.last_name.toLowerCase().includes(searchTerm);
+      filteredEmployees.value = Employees.value.filter((emp) => {
+         const firstNameMatch = emp.first_name.toLowerCase().includes(searchTerm);
+         const lastNameMatch = emp.last_name.toLowerCase().includes(searchTerm);
+         const rankMatch = emp.rank && emp.rank.toLowerCase().includes(searchTerm);
 
-         return firstNameMatch || lastNameMatch;
+         return firstNameMatch || lastNameMatch || rankMatch;
       });
+   };
+
+   // Apply filters function
+   const applyFilters = () => {
+      // This will trigger the computed property to recalculate
    };
 
    // Verification check to see if user is an admin or developer before showing settings icon

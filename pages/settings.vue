@@ -1,73 +1,185 @@
 <template>
    <Title>Admin - Settings</Title>
-   <div class="card card-side h-[37rem] w-[65rem] bg-dark_green text-black">
-      <!-- Account Credentials Column -->
-      <div class="flex-1 bg-primary_white rounded-l-[1rem] p-10">
-         <label for="company-email" class="block mb-2">Account Email:</label>
-         <input v-model="accountEmail" id="company-email" type="email" placeholder="New Email" class="w-full input bg-primary_white border-2 border-search_stroke_gray text-black rounded mb-4">
-
-         <label for="company-password" class="block mb-2">Account Password:</label>
-         <input v-model="password" id="company-password" :type="passwordFieldType" placeholder="New Password" class="w-full input bg-primary_white border-2 border-search_stroke_gray text-black rounded mb-2">
-         <div class="flex items-center mb-4">
-            <input type="checkbox" id="show-password" @click="hidePassword = !hidePassword" class="mr-2" />
-            <label for="show-password">Show Password</label>
-         </div>
-         <button @click="initiatePasswordUpdate" class="btn bg-dark_green text-white rounded-full capitalize w-full mt-5">Update Credentials</button>
-
-         <!-- Success Notification -->
-         <div v-if="updateAccountSuccess" class="success-message mt-5" role="alert">
-            Credentials updated successfully! If you've changed your email, please check your new email for a confirmation link.
-         </div>
-         <!-- Failure Notification -->
-         <div v-if="updateAccountFailure" class="failure-message mt-5" role="alert">
-            Unable to update credentials!
-         </div>
-      </div>
-
-      <!-- Settings Column -->
-      <div class="flex-1 bg-primary_white rounded-r-[1rem] p-10">
-         <label for="otp-email" class="block mb-2">OTP Email:</label>
-         <input v-model="otpEmail" id="otp-email" type="email" placeholder="OTP Email" class="w-full input bg-primary_white border-2 border-search_stroke_gray text-black rounded mb-4">
-         
-         <label for="otp-phone" class="block mb-2">OTP Phone Number:</label>
-         <input v-model="otpPhone" id="otp-phone" type="tel" placeholder="OTP Phone Number" class="w-full input bg-primary_white border-2 border-search_stroke_gray text-black rounded mb-4">
-         
-         <!-- OTP Channel Selector -->
-         <label for="otp-channel" class="block mb-2">OTP Channel:</label>
-         <select v-model="otpChannel" id="otp-channel" class="w-full input bg-primary_white border-2 border-search_stroke_gray text-black rounded mb-4">
-            <option value="Email">Email</option>
-            <option value="SMS">SMS</option>
-            <option value="WhatsApp">WhatsApp</option>
-         </select>
-
-         <div class="flex items-center mb-4">
-            <label for="otp-toggle" class="mr-2">Enable OTP:</label>
-            <input v-model="otpEnable" id="otp-toggle" type="checkbox" class="toggle toggle-primary">
-         </div>
-         <button @click="updateSettings" class="btn bg-dark_green text-white rounded-full capitalize w-full mt-5">Update Settings</button>
-
-         <!-- Success Notification -->
-         <div v-if="updateSuccess" class="success-message mt-5" role="alert">
-            Settings updated successfully!
-         </div>
-         <!-- Failure Notification -->
-         <div v-if="updateFailure" class="failure-message mt-5" role="alert">
-            Unable to update settings!
+   <div class="min-h-screen bg-primary_white">
+      <!-- Top Navigation -->
+      <div class="bg-dark_green text-white px-6 py-4">
+         <div class="flex justify-between items-center">
+            <div class="flex items-center space-x-6">
+               <NuxtLink to="/" class="flex items-center space-x-2 hover:text-primary_green transition-colors">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                  </svg>
+                  <span>Back to Dashboard</span>
+               </NuxtLink>
+               <nav class="flex space-x-6">
+                  <NuxtLink to="/employees" class="px-3 py-2 hover:bg-button_green transition-colors rounded-lg">Employees</NuxtLink>
+                  <NuxtLink to="/records" class="px-3 py-2 hover:bg-button_green transition-colors rounded-lg">Records</NuxtLink>
+                  <NuxtLink to="/settings" class="px-3 py-2 bg-primary_white text-dark_green rounded-lg font-semibold">Settings</NuxtLink>
+               </nav>
+            </div>
+            <button @click="logout" class="flex items-center space-x-2 hover:bg-button_green px-3 py-2 rounded-lg transition-colors">
+               <span>Logout</span>
+               <img class="w-4 h-4" src="~/assets/icons/exit_white.png">
+            </button>
          </div>
       </div>
 
-      <!-- Sidebar Menu -->
-      <ul class="menu w-[10rem] p-0 font-bold text-white justify-between">
-         <div>
-            <li class="py-2 items-center"><NuxtLink to="/">← Back</NuxtLink></li>
-            <li class="py-2 items-center"><NuxtLink to="/employees">Employees</NuxtLink></li>
-            <li class="py-2 items-center"><NuxtLink to="/records">Records</NuxtLink></li>
-            <li class="active bg-primary_white rounded-r-[1rem] py-2 items-center text-black"><NuxtLink to="/settings">Settings</NuxtLink></li>         
+      <!-- Main Content -->
+      <div class="p-6 max-w-7xl mx-auto">
+         <!-- Header Section -->
+         <div class="mb-8">
+            <h1 class="text-3xl font-bold text-dark_gray mb-2">System Settings</h1>
+            <p class="text-dark_gray/70">Manage account credentials and system configurations</p>
          </div>
-         <div class="self-end mb-1">
-            <button @click="logout" class="font-bold btn btn-sm btn-ghost btn-circle w-28">Logout<img class="mx-2 w-4 h-4" src="~/assets/icons/exit_white.png"></button>
+
+         <!-- Settings Grid -->
+         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Account Credentials Section -->
+            <div class="bg-white rounded-xl shadow-sm border border-search_stroke_gray p-6">
+               <div class="flex items-center mb-6">
+                  <div class="w-10 h-10 bg-dark_green rounded-full flex items-center justify-center mr-3">
+                     <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                     </svg>
+                  </div>
+                  <div>
+                     <h2 class="text-xl font-semibold text-dark_gray">Account Credentials</h2>
+                     <p class="text-sm text-dark_gray/70">Update your account email and password</p>
+                  </div>
+               </div>
+
+               <div class="space-y-4">
+                  <div>
+                     <label for="company-email" class="block text-sm font-medium text-dark_gray mb-2">Account Email</label>
+                     <input 
+                        v-model="accountEmail" 
+                        id="company-email" 
+                        type="email" 
+                        placeholder="Enter new email" 
+                        class="w-full input input-bordered bg-primary_white border-search_stroke_gray focus:border-dark_green"
+                     >
+                  </div>
+
+                  <div>
+                     <label for="company-password" class="block text-sm font-medium text-dark_gray mb-2">New Password</label>
+                     <input 
+                        v-model="password" 
+                        id="company-password" 
+                        :type="passwordFieldType" 
+                        placeholder="Enter new password" 
+                        class="w-full input input-bordered bg-primary_white border-search_stroke_gray focus:border-dark_green"
+                     >
+                     <div class="flex items-center mt-2">
+                        <input type="checkbox" id="show-password" @click="hidePassword = !hidePassword" class="checkbox checkbox-sm mr-2" />
+                        <label for="show-password" class="text-sm text-dark_gray">Show Password</label>
+                     </div>
+                  </div>
+
+                  <button @click="initiatePasswordUpdate" class="btn bg-dark_green hover:bg-button_green text-white border-none w-full">
+                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                     </svg>
+                     Update Credentials
+                  </button>
+
+                  <!-- Success/Failure Notifications -->
+                  <div v-if="updateAccountSuccess" class="alert alert-success">
+                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                     </svg>
+                     <span>Credentials updated successfully! If you've changed your email, please check your new email for a confirmation link.</span>
+                  </div>
+                  <div v-if="updateAccountFailure" class="alert alert-error">
+                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                     </svg>
+                     <span>Unable to update credentials!</span>
+                  </div>
+               </div>
+            </div>
+
+            <!-- OTP Settings Section -->
+            <div class="bg-white rounded-xl shadow-sm border border-search_stroke_gray p-6">
+               <div class="flex items-center mb-6">
+                  <div class="w-10 h-10 bg-dark_green rounded-full flex items-center justify-center mr-3">
+                     <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                     </svg>
+                  </div>
+                  <div>
+                     <h2 class="text-xl font-semibold text-dark_gray">Security Settings</h2>
+                     <p class="text-sm text-dark_gray/70">Configure two-factor authentication</p>
+                  </div>
+               </div>
+
+               <div class="space-y-4">
+                  <div>
+                     <label for="otp-email" class="block text-sm font-medium text-dark_gray mb-2">OTP Email</label>
+                     <input 
+                        v-model="otpEmail" 
+                        id="otp-email" 
+                        type="email" 
+                        placeholder="Enter OTP email" 
+                        class="w-full input input-bordered bg-primary_white border-search_stroke_gray focus:border-dark_green"
+                     >
+                  </div>
+
+                  <div>
+                     <label for="otp-phone" class="block text-sm font-medium text-dark_gray mb-2">OTP Phone Number</label>
+                     <input 
+                        v-model="otpPhone" 
+                        id="otp-phone" 
+                        type="tel" 
+                        placeholder="+1234567890" 
+                        class="w-full input input-bordered bg-primary_white border-search_stroke_gray focus:border-dark_green"
+                     >
+                  </div>
+
+                  <div>
+                     <label for="otp-channel" class="block text-sm font-medium text-dark_gray mb-2">OTP Channel</label>
+                     <select 
+                        v-model="otpChannel" 
+                        id="otp-channel" 
+                        class="w-full select select-bordered bg-primary_white border-search_stroke_gray focus:border-dark_green"
+                     >
+                        <option value="Email">Email</option>
+                        <option value="SMS">SMS</option>
+                        <option value="WhatsApp">WhatsApp</option>
+                     </select>
+                  </div>
+
+                  <div class="flex items-center justify-between p-4 bg-off_white rounded-lg">
+                     <div>
+                        <h3 class="font-medium text-dark_gray">Enable Two-Factor Authentication</h3>
+                        <p class="text-sm text-dark_gray/70">Add an extra layer of security to your account</p>
+                     </div>
+                     <input v-model="otpEnable" id="otp-toggle" type="checkbox" class="toggle toggle-primary">
+                  </div>
+
+                  <button @click="updateSettings" class="btn bg-dark_green hover:bg-button_green text-white border-none w-full">
+                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                     </svg>
+                     Update Security Settings
+                  </button>
+
+                  <!-- Success/Failure Notifications -->
+                  <div v-if="updateSuccess" class="alert alert-success">
+                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                     </svg>
+                     <span>Settings updated successfully!</span>
+                  </div>
+                  <div v-if="updateFailure" class="alert alert-error">
+                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                     </svg>
+                     <span>Unable to update settings!</span>
+                  </div>
+               </div>
+            </div>
          </div>
-      </ul>
+      </div>
    </div>
 
    <!-- Re-authentication Modal -->
@@ -79,25 +191,6 @@
    />
 </template>
 
-<style scoped>
-   .success-message {
-      background-color: #689E6E;
-      color: white;
-      padding: 0.5rem;
-      margin-bottom: 1rem;
-      border-radius: 0.5rem;
-      text-align: center;
-   }
-
-   .failure-message {
-      background-color: #FF5733; /* Red background */
-      color: white; /* White text */
-      padding: 0.5rem; /* Padding around the text */
-      margin-bottom: 1rem; /* Margin at the bottom */
-      border-radius: 0.5rem; /* Rounded corners */
-      text-align: center; /* Center the text */
-   }
-</style>
 
 <script setup>
    import { ref } from 'vue';

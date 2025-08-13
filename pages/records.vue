@@ -489,227 +489,302 @@ const logout = async () => {
 
 <template>
    <Title>Admin - Records</Title>
-   <div class="card card-side h-[37rem] w-[65rem] bg-dark_green text-black">
-      <div class="card h-[37rem] w-[55rem] bg-primary_white rounded-[1rem] rounded-br-[1rem]">
-         <div class="card card-side justify-between mx-10 mt-5">
-            <div class="card card-side">
-               <p class="pe-2 mt-1">Employee:</p>
-               <div class="dropdown dropdown-hover w-56 border-button_green border-2 rounded-md">
-                  <label tabindex="0" class="ps-3">{{ currentEmployeeName || 'Name' }}</label>
-                  <ul tabindex="0" class="dropdown-content z-[1] menu rounded-md shadow bg-primary_white w-56   py-2 px-3">
-                     <li v-for="p in Employees" class="py-1" @click="setCurrentEmployee(p)">{{ p.first_name }} {{
-                        p.last_name
-                     }}</li>
-                  </ul>
-               </div>
+   <div class="min-h-screen bg-primary_white">
+      <!-- Top Navigation -->
+      <div class="bg-dark_green text-white px-6 py-4">
+         <div class="flex justify-between items-center">
+            <div class="flex items-center space-x-6">
+               <NuxtLink to="/" class="flex items-center space-x-2 hover:text-primary_green transition-colors">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                  </svg>
+                  <span>Back to Dashboard</span>
+               </NuxtLink>
+               <nav class="flex space-x-6">
+                  <NuxtLink to="/employees" class="px-3 py-2 hover:bg-button_green transition-colors rounded-lg">Employees</NuxtLink>
+                  <NuxtLink to="/records" class="px-3 py-2 bg-primary_white text-dark_green rounded-lg font-semibold">Records</NuxtLink>
+                  <NuxtLink to="/settings" class="px-3 py-2 hover:bg-button_green transition-colors rounded-lg">Settings</NuxtLink>
+               </nav>
             </div>
-            <div class="card card-side">
-               <p class="pe-2 mt-1">Week:</p>
-               <div class="dropdown dropdown-hover w-64 border-button_green border-2 rounded-md">
-                  <label tabindex="0" class="ps-3">{{ selectedWeek }}</label>
-                  <ul tabindex="0" class="dropdown-content z-[1] menu rounded-md shadow bg-primary_white w-64 py-2 px-3">
-                     <li v-for="w in weeks" class="py-1" @click="handleWeekClick(w)">
-                        {{ w }}
-                     </li>
-                  </ul>
-               </div>
-            </div>
-            <div :class="{ 'text-transparent': isLoading }">
-               <p>Loading...</p>
-            </div>
-            <div> <button @click="Rerender()">Enter</button> </div>
+            <button @click="logout" class="flex items-center space-x-2 hover:bg-button_green px-3 py-2 rounded-lg transition-colors">
+               <span>Logout</span>
+               <img class="w-4 h-4" src="~/assets/icons/exit_white.png">
+            </button>
          </div>
-         <div class="card mx-5 my-5 bg-off_white p-2 px-5">
-            <table class="table table-sm">
-               <thead class="text-black">
-                  <tr>
-                     <th class="me-5"></th>
-                     <th>in</th>
-                     <th>out</th>
-                     <th>Total</th>
-                     <th>Hrs</th>
-                     <th>Mins</th>
-                     <th>H-Pay</th>
-                     <th>M-Pay</th>
-                     <th>Total</th>
-                  </tr>
-               </thead>
-               <tbody>
-                  <tr>
-                     <th class="pe-10">Mon</th>
-                     <td v-if="monday.length !== 0">{{ monday_timein }}</td>
-                     <td v-else></td>
-                     <td v-if="monday.length !== 0">{{ monday_timeout }}</td>
-                     <td v-else></td>
-                     <td v-if="monday.length !== 0">{{ monday[0].duration_json }}</td>
-                     <td v-else></td>
-                     <td><input class="w-20 bg-transparent" v-model="monday_hrs"></td>
-                     <td><input class="w-20 bg-transparent" v-model="monday_mins"></td>
-                     <td><input class="w-20 bg-transparent" v-model="monday_h_pay"></td>
-                     <td><input class="w-20 bg-transparent" v-model="monday_m_pay"></td>
-                     <td>{{ monday_total }}</td>
-                  </tr>
-                  <tr>
-                     <th>Tue</th>
-                     <td v-if="tuesday.length !== 0">{{ tuesday_timein }}</td>
-                     <td v-else></td>
-                     <td v-if="tuesday.length !== 0">{{ tuesday_timeout }}</td>
-                     <td v-else></td>
-                     <td v-if="tuesday.length !== 0">{{ tuesday[0].duration_json }}</td>
-                     <td v-else></td>
-                     <td><input class="w-20 bg-transparent" v-model="tuesday_hrs"></td>
-                     <td><input class="w-20 bg-transparent" v-model="tuesday_mins"></td>
-                     <td><input class="w-20 bg-transparent" v-model="tuesday_h_pay"></td>
-                     <td><input class="w-20 bg-transparent" v-model="tuesday_m_pay"></td>
-                     <td>{{ tuesday_total }}</td>
-                  </tr>
+      </div>
 
-                  <tr>
-                     <th>Wed</th>
-                     <td v-if="wednesday.length !== 0">{{ wednesday_timein }}</td>
-                     <td v-else></td>
-                     <td v-if="wednesday.length !== 0">{{ wednesday_timeout }}</td>
-                     <td v-else></td>
-                     <td v-if="wednesday.length !== 0">{{ wednesday[0].duration_json }}</td>
-                     <td v-else></td>
-                     <td><input class="w-20 bg-transparent" v-model="wednesday_hrs"></td>
-                     <td><input class="w-20 bg-transparent" v-model="wednesday_mins"></td>
-                     <td><input class="w-20 bg-transparent" v-model="wednesday_h_pay"></td>
-                     <td><input class="w-20 bg-transparent" v-model="wednesday_m_pay"></td>
-                     <td>{{ wednesday_total }}</td>
-                  </tr>
-
-                  <tr>
-                     <th>Thu</th>
-                     <td v-if="thursday.length !== 0">{{ thursday_timein }}</td>
-                     <td v-else></td>
-                     <td v-if="thursday.length !== 0">{{ thursday_timeout }}</td>
-                     <td v-else></td>
-                     <td v-if="thursday.length !== 0">{{ thursday[0].duration_json }}</td>
-                     <td v-else></td>
-                     <td><input class="w-20 bg-transparent" v-model="thursday_hrs"></td>
-                     <td><input class="w-20 bg-transparent" v-model="thursday_mins"></td>
-                     <td><input class="w-20 bg-transparent" v-model="thursday_h_pay"></td>
-                     <td><input class="w-20 bg-transparent" v-model="thursday_m_pay"></td>
-                     <td>{{ thursday_total }}</td>
-                  </tr>
-
-                  <tr>
-                     <th>Fri</th>
-                     <td v-if="friday.length !== 0">{{ friday_timein }}</td>
-                     <td v-else></td>
-                     <td v-if="friday.length !== 0">{{ friday_timeout }}</td>
-                     <td v-else></td>
-                     <td v-if="friday.length !== 0">{{ friday[0].duration_json }}</td>
-                     <td v-else></td>
-                     <td><input class="w-20 bg-transparent" v-model="friday_hrs"></td>
-                     <td><input class="w-20 bg-transparent" v-model="friday_mins"></td>
-                     <td><input class="w-20 bg-transparent" v-model="friday_h_pay"></td>
-                     <td><input class="w-20 bg-transparent" v-model="friday_m_pay"></td>
-                     <td>{{ friday_total }}</td>
-                  </tr>
-
-                  <tr>
-                     <th>Sat</th>
-                     <td v-if="saturday.length !== 0">{{ saturday_timein }}</td>
-                     <td v-else></td>
-                     <td v-if="saturday.length !== 0">{{ saturday_timeout }}</td>
-                     <td v-else></td>
-                     <td v-if="saturday.length !== 0">{{ saturday[0].duration_json }}</td>
-                     <td v-else></td>
-                     <td><input class="w-20 bg-transparent" v-model="saturday_hrs"></td>
-                     <td><input class="w-20 bg-transparent" v-model="saturday_mins"></td>
-                     <td><input class="w-20 bg-transparent" v-model="saturday_h_pay"></td>
-                     <td><input class="w-20 bg-transparent" v-model="saturday_m_pay"></td>
-                     <td>{{ saturday_total }}</td>
-                  </tr>
-
-                  <tr>
-                     <th>Adj Fri</th>
-                     <td></td>
-                     <td></td>
-                     <td></td>
-                     <td><input class="w-20 bg-transparent" v-model="adjfriday_hrs"></td>
-                     <td><input class="w-20 bg-transparent" v-model="adjfriday_mins"></td>
-                     <td><input class="w-20 bg-transparent" v-model="adjfriday_h_pay"></td>
-                     <td><input class="w-20 bg-transparent" v-model="adjfriday_m_pay"></td>
-                     <td>{{ adjfriday_total }}</td>
-                  </tr>
-                  <tr>
-                     <th>Adj Sat</th>
-                     <td></td>
-                     <td></td>
-                     <td></td>
-                     <td><input class="w-20 bg-transparent" v-model="adjsaturday_hrs"></td>
-                     <td><input class="w-20 bg-transparent" v-model="adjsaturday_mins"></td>
-                     <td><input class="w-20 bg-transparent" v-model="adjsaturday_h_pay"></td>
-                     <td><input class="w-20 bg-transparent" v-model="adjsaturday_m_pay"></td>
-                     <td>{{ adjsaturday_total }}</td>
-                  </tr>
-               </tbody>
-            </table>
+      <!-- Main Content -->
+      <div class="p-6 max-w-7xl mx-auto">
+         <!-- Header Section -->
+         <div class="mb-8">
+            <h1 class="text-3xl font-bold text-dark_gray mb-2">Payroll Records</h1>
+            <p class="text-dark_gray/70">Manage employee timesheets and payroll calculations</p>
          </div>
-         <div class="card card-side justify-between mx-5 text-sm">
-            <div class="card bg-off_white px-5 py-2">
-               <div class="card card-side justify-between pb-4 pt-1">
-                  <div class="pe-36 card card-side">
-                     <p class="pe-2 font-bold">Pay per Hr:</p>
-                     <input v-model="phr" class="w-20 bg-transparent">
+
+         <!-- Selection Controls -->
+         <div class="bg-white rounded-xl shadow-sm border border-search_stroke_gray p-6 mb-8">
+            <div class="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
+               <div class="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+                  <div class="flex items-center space-x-3">
+                     <label class="text-sm font-medium text-dark_gray">Employee:</label>
+                     <div class="dropdown dropdown-hover">
+                        <label tabindex="0" class="btn btn-outline btn-sm w-64 justify-start">
+                           {{ currentEmployeeName || 'Select Employee' }}
+                           <svg class="w-4 h-4 ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                           </svg>
+                        </label>
+                        <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow bg-white rounded-box w-64 max-h-60 overflow-auto">
+                           <li v-for="p in Employees" :key="p.id" @click="setCurrentEmployee(p)">
+                              <a>{{ p.first_name }} {{ p.last_name }}</a>
+                           </li>
+                        </ul>
+                     </div>
                   </div>
-                  <div class="pe-36 card card-side">
-                     <p class="pe-2 font-bold">Pay per Min:</p>
-                     <input v-model="pmn" class="w-20 bg-transparent">
+                  <div class="flex items-center space-x-3">
+                     <label class="text-sm font-medium text-dark_gray">Week:</label>
+                     <div class="dropdown dropdown-hover">
+                        <label tabindex="0" class="btn btn-outline btn-sm w-80 justify-start">
+                           {{ selectedWeek }}
+                           <svg class="w-4 h-4 ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                           </svg>
+                        </label>
+                        <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow bg-white rounded-box w-80 max-h-60 overflow-auto">
+                           <li v-for="w in weeks" :key="w" @click="handleWeekClick(w)">
+                              <a>{{ w }}</a>
+                           </li>
+                        </ul>
+                     </div>
                   </div>
                </div>
-               <p class="font-bold text-black">Additional Notes:</p>
-               <input v-model="notes" type="text" class="w-full h-14 rounded-md bg-off_white border-2 border-dark_green" />
+               <div class="flex items-center space-x-4">
+                  <div v-if="isLoading" class="flex items-center space-x-2 text-dark_gray/70">
+                     <div class="loading loading-spinner loading-sm"></div>
+                     <span class="text-sm">Loading...</span>
+                  </div>
+                  <button @click="Rerender()" class="btn bg-dark_green hover:bg-button_green text-white border-none">
+                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                     </svg>
+                     Calculate
+                  </button>
+               </div>
             </div>
-            <div class="card px-5 py-2 bg-off_white">
-               <table class="text-xs">
+         </div>
+         <!-- Timesheet Section -->
+         <div class="bg-white rounded-xl shadow-sm border border-search_stroke_gray mb-8 overflow-hidden">
+            <div class="px-6 py-4 bg-off_white border-b border-search_stroke_gray">
+               <h2 class="text-lg font-semibold text-dark_gray">Weekly Timesheet</h2>
+               <p class="text-sm text-dark_gray/70">Track daily hours and calculate payments</p>
+            </div>
+            <div class="overflow-x-auto">
+               <table class="table table-sm w-full">
+                  <thead class="bg-off_white">
+                     <tr>
+                        <th class="text-dark_gray font-semibold">Day</th>
+                        <th class="text-dark_gray font-semibold">Clock In</th>
+                        <th class="text-dark_gray font-semibold">Clock Out</th>
+                        <th class="text-dark_gray font-semibold">Duration</th>
+                        <th class="text-dark_gray font-semibold">Hours</th>
+                        <th class="text-dark_gray font-semibold">Minutes</th>
+                        <th class="text-dark_gray font-semibold">Hourly Rate</th>
+                        <th class="text-dark_gray font-semibold">Minute Rate</th>
+                        <th class="text-dark_gray font-semibold">Daily Total</th>
+                     </tr>
+                  </thead>
                   <tbody>
-                     <tr>
-                        <th class="font-normal text-left">Weekly Total</th>
-                        <td class="w-16 text-right">{{ weekTotal }}</td>
+                     <tr class="hover:bg-off_white/50">
+                        <th class="text-dark_gray font-medium">Monday</th>
+                        <td class="text-sm">{{ monday.length !== 0 ? monday_timein : '-' }}</td>
+                        <td class="text-sm">{{ monday.length !== 0 ? monday_timeout : '-' }}</td>
+                        <td class="text-sm">{{ monday.length !== 0 ? monday[0].duration_json : '-' }}</td>
+                        <td><input class="input input-xs w-16 bg-off_white border-search_stroke_gray" v-model="monday_hrs"></td>
+                        <td><input class="input input-xs w-16 bg-off_white border-search_stroke_gray" v-model="monday_mins"></td>
+                        <td><input class="input input-xs w-20 bg-off_white border-search_stroke_gray" v-model="monday_h_pay"></td>
+                        <td><input class="input input-xs w-20 bg-off_white border-search_stroke_gray" v-model="monday_m_pay"></td>
+                        <td class="font-semibold text-dark_green">₱{{ monday_total }}</td>
                      </tr>
-                     <tr>
-                        <th class="font-normal text-left">Bale</th>
-                        <td class="w-16 text-right"><input class="w-10 bg-transparent" v-model="bale"></td>
+                     <tr class="hover:bg-off_white/50">
+                        <th class="text-dark_gray font-medium">Tuesday</th>
+                        <td class="text-sm">{{ tuesday.length !== 0 ? tuesday_timein : '-' }}</td>
+                        <td class="text-sm">{{ tuesday.length !== 0 ? tuesday_timeout : '-' }}</td>
+                        <td class="text-sm">{{ tuesday.length !== 0 ? tuesday[0].duration_json : '-' }}</td>
+                        <td><input class="input input-xs w-16 bg-off_white border-search_stroke_gray" v-model="tuesday_hrs"></td>
+                        <td><input class="input input-xs w-16 bg-off_white border-search_stroke_gray" v-model="tuesday_mins"></td>
+                        <td><input class="input input-xs w-20 bg-off_white border-search_stroke_gray" v-model="tuesday_h_pay"></td>
+                        <td><input class="input input-xs w-20 bg-off_white border-search_stroke_gray" v-model="tuesday_m_pay"></td>
+                        <td class="font-semibold text-dark_green">₱{{ tuesday_total }}</td>
                      </tr>
-                     <tr>
-                        <th class="font-normal text-left">Bonus</th>
-                        <td class="w-16 text-right"><input class="w-10 bg-transparent" v-model="advance"></td>
+                     <tr class="hover:bg-off_white/50">
+                        <th class="text-dark_gray font-medium">Wednesday</th>
+                        <td class="text-sm">{{ wednesday.length !== 0 ? wednesday_timein : '-' }}</td>
+                        <td class="text-sm">{{ wednesday.length !== 0 ? wednesday_timeout : '-' }}</td>
+                        <td class="text-sm">{{ wednesday.length !== 0 ? wednesday[0].duration_json : '-' }}</td>
+                        <td><input class="input input-xs w-16 bg-off_white border-search_stroke_gray" v-model="wednesday_hrs"></td>
+                        <td><input class="input input-xs w-16 bg-off_white border-search_stroke_gray" v-model="wednesday_mins"></td>
+                        <td><input class="input input-xs w-20 bg-off_white border-search_stroke_gray" v-model="wednesday_h_pay"></td>
+                        <td><input class="input input-xs w-20 bg-off_white border-search_stroke_gray" v-model="wednesday_m_pay"></td>
+                        <td class="font-semibold text-dark_green">₱{{ wednesday_total }}</td>
                      </tr>
-                     <tr class="border-b-2 border-dark_green">
-                        <th class="font-normal text-left">Deduction</th>
-                        <td class="w-16 text-right"><input class="w-10 bg-transparent" v-model="deduction"></td>
+                     <tr class="hover:bg-off_white/50">
+                        <th class="text-dark_gray font-medium">Thursday</th>
+                        <td class="text-sm">{{ thursday.length !== 0 ? thursday_timein : '-' }}</td>
+                        <td class="text-sm">{{ thursday.length !== 0 ? thursday_timeout : '-' }}</td>
+                        <td class="text-sm">{{ thursday.length !== 0 ? thursday[0].duration_json : '-' }}</td>
+                        <td><input class="input input-xs w-16 bg-off_white border-search_stroke_gray" v-model="thursday_hrs"></td>
+                        <td><input class="input input-xs w-16 bg-off_white border-search_stroke_gray" v-model="thursday_mins"></td>
+                        <td><input class="input input-xs w-20 bg-off_white border-search_stroke_gray" v-model="thursday_h_pay"></td>
+                        <td><input class="input input-xs w-20 bg-off_white border-search_stroke_gray" v-model="thursday_m_pay"></td>
+                        <td class="font-semibold text-dark_green">₱{{ thursday_total }}</td>
                      </tr>
-                     <tr class="text-base">
-                        <th class="pe-10 pt-2 text-left">Total Balance</th>
-                        <td class="w-16 pt-2 text-right">{{ total_bal }}</td>
+                     <tr class="hover:bg-off_white/50">
+                        <th class="text-dark_gray font-medium">Friday</th>
+                        <td class="text-sm">{{ friday.length !== 0 ? friday_timein : '-' }}</td>
+                        <td class="text-sm">{{ friday.length !== 0 ? friday_timeout : '-' }}</td>
+                        <td class="text-sm">{{ friday.length !== 0 ? friday[0].duration_json : '-' }}</td>
+                        <td><input class="input input-xs w-16 bg-off_white border-search_stroke_gray" v-model="friday_hrs"></td>
+                        <td><input class="input input-xs w-16 bg-off_white border-search_stroke_gray" v-model="friday_mins"></td>
+                        <td><input class="input input-xs w-20 bg-off_white border-search_stroke_gray" v-model="friday_h_pay"></td>
+                        <td><input class="input input-xs w-20 bg-off_white border-search_stroke_gray" v-model="friday_m_pay"></td>
+                        <td class="font-semibold text-dark_green">₱{{ friday_total }}</td>
+                     </tr>
+                     <tr class="hover:bg-off_white/50">
+                        <th class="text-dark_gray font-medium">Saturday</th>
+                        <td class="text-sm">{{ saturday.length !== 0 ? saturday_timein : '-' }}</td>
+                        <td class="text-sm">{{ saturday.length !== 0 ? saturday_timeout : '-' }}</td>
+                        <td class="text-sm">{{ saturday.length !== 0 ? saturday[0].duration_json : '-' }}</td>
+                        <td><input class="input input-xs w-16 bg-off_white border-search_stroke_gray" v-model="saturday_hrs"></td>
+                        <td><input class="input input-xs w-16 bg-off_white border-search_stroke_gray" v-model="saturday_mins"></td>
+                        <td><input class="input input-xs w-20 bg-off_white border-search_stroke_gray" v-model="saturday_h_pay"></td>
+                        <td><input class="input input-xs w-20 bg-off_white border-search_stroke_gray" v-model="saturday_m_pay"></td>
+                        <td class="font-semibold text-dark_green">₱{{ saturday_total }}</td>
+                     </tr>
+                     <tr class="bg-yellow-50 hover:bg-yellow-100">
+                        <th class="text-dark_gray font-medium">Adj Friday</th>
+                        <td class="text-gray-400">-</td>
+                        <td class="text-gray-400">-</td>
+                        <td class="text-gray-400">-</td>
+                        <td><input class="input input-xs w-16 bg-yellow-100 border-yellow-300" v-model="adjfriday_hrs"></td>
+                        <td><input class="input input-xs w-16 bg-yellow-100 border-yellow-300" v-model="adjfriday_mins"></td>
+                        <td><input class="input input-xs w-20 bg-yellow-100 border-yellow-300" v-model="adjfriday_h_pay"></td>
+                        <td><input class="input input-xs w-20 bg-yellow-100 border-yellow-300" v-model="adjfriday_m_pay"></td>
+                        <td class="font-semibold text-yellow-600">₱{{ adjfriday_total }}</td>
+                     </tr>
+                     <tr class="bg-yellow-50 hover:bg-yellow-100">
+                        <th class="text-dark_gray font-medium">Adj Saturday</th>
+                        <td class="text-gray-400">-</td>
+                        <td class="text-gray-400">-</td>
+                        <td class="text-gray-400">-</td>
+                        <td><input class="input input-xs w-16 bg-yellow-100 border-yellow-300" v-model="adjsaturday_hrs"></td>
+                        <td><input class="input input-xs w-16 bg-yellow-100 border-yellow-300" v-model="adjsaturday_mins"></td>
+                        <td><input class="input input-xs w-20 bg-yellow-100 border-yellow-300" v-model="adjsaturday_h_pay"></td>
+                        <td><input class="input input-xs w-20 bg-yellow-100 border-yellow-300" v-model="adjsaturday_m_pay"></td>
+                        <td class="font-semibold text-yellow-600">₱{{ adjsaturday_total }}</td>
                      </tr>
                   </tbody>
                </table>
             </div>
          </div>
+
+         <!-- Payroll Calculation Section -->
+         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Pay Settings and Notes -->
+            <div class="bg-white rounded-xl shadow-sm border border-search_stroke_gray p-6">
+               <div class="flex items-center mb-6">
+                  <div class="w-10 h-10 bg-dark_green rounded-full flex items-center justify-center mr-3">
+                     <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                     </svg>
+                  </div>
+                  <div>
+                     <h2 class="text-xl font-semibold text-dark_gray">Pay Configuration</h2>
+                     <p class="text-sm text-dark_gray/70">Set hourly and minute rates</p>
+                  </div>
+               </div>
+
+               <div class="grid grid-cols-2 gap-4 mb-6">
+                  <div>
+                     <label class="block text-sm font-medium text-dark_gray mb-2">Pay per Hour</label>
+                     <div class="relative">
+                        <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-dark_gray/70">₱</span>
+                        <input v-model="phr" class="input input-bordered w-full pl-8 bg-off_white border-search_stroke_gray focus:border-dark_green">
+                     </div>
+                  </div>
+                  <div>
+                     <label class="block text-sm font-medium text-dark_gray mb-2">Pay per Minute</label>
+                     <div class="relative">
+                        <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-dark_gray/70">₱</span>
+                        <input v-model="pmn" class="input input-bordered w-full pl-8 bg-off_white border-search_stroke_gray focus:border-dark_green">
+                     </div>
+                  </div>
+               </div>
+
+               <div>
+                  <label class="block text-sm font-medium text-dark_gray mb-2">Additional Notes</label>
+                  <textarea 
+                     v-model="notes" 
+                     class="textarea textarea-bordered w-full bg-off_white border-search_stroke_gray focus:border-dark_green"
+                     rows="4"
+                     placeholder="Add any additional notes or comments about this payroll period..."
+                  ></textarea>
+               </div>
+            </div>
+
+            <!-- Payroll Summary -->
+            <div class="bg-white rounded-xl shadow-sm border border-search_stroke_gray p-6">
+               <div class="flex items-center mb-6">
+                  <div class="w-10 h-10 bg-dark_green rounded-full flex items-center justify-center mr-3">
+                     <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                     </svg>
+                  </div>
+                  <div>
+                     <h2 class="text-xl font-semibold text-dark_gray">Payroll Summary</h2>
+                     <p class="text-sm text-dark_gray/70">Weekly totals and adjustments</p>
+                  </div>
+               </div>
+
+               <div class="space-y-4">
+                  <div class="flex justify-between items-center p-3 bg-off_white rounded-lg">
+                     <span class="font-medium text-dark_gray">Weekly Total</span>
+                     <span class="text-lg font-bold text-dark_green">₱{{ weekTotal }}</span>
+                  </div>
+
+                  <div class="space-y-3">
+                     <div class="flex justify-between items-center">
+                        <label class="text-sm font-medium text-dark_gray">Bale (Previous Balance)</label>
+                        <div class="relative">
+                           <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-dark_gray/70">₱</span>
+                           <input class="input input-sm input-bordered w-24 pl-8 bg-off_white border-search_stroke_gray" v-model="bale">
+                        </div>
+                     </div>
+                     <div class="flex justify-between items-center">
+                        <label class="text-sm font-medium text-dark_gray">Bonus/Advance</label>
+                        <div class="relative">
+                           <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-dark_gray/70">₱</span>
+                           <input class="input input-sm input-bordered w-24 pl-8 bg-off_white border-search_stroke_gray" v-model="advance">
+                        </div>
+                     </div>
+                     <div class="flex justify-between items-center">
+                        <label class="text-sm font-medium text-dark_gray">Deductions</label>
+                        <div class="relative">
+                           <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-dark_gray/70">₱</span>
+                           <input class="input input-sm input-bordered w-24 pl-8 bg-off_white border-search_stroke_gray" v-model="deduction">
+                        </div>
+                     </div>
+                  </div>
+
+                  <div class="border-t-2 border-dark_green pt-4">
+                     <div class="flex justify-between items-center p-4 bg-dark_green/10 rounded-lg">
+                        <span class="text-lg font-bold text-dark_gray">Final Total Balance</span>
+                        <span class="text-2xl font-bold text-dark_green">₱{{ total_bal }}</span>
+                     </div>
+                  </div>
+               </div>
+            </div>
+         </div>
       </div>
-      <ul class="menu w-[10rem] p-0 font-bold text-white justify-between">
-         <div>
-            <li class="py-2 items-center"><NuxtLink to="/">← Back</NuxtLink></li>
-            <li class="py-2 items-center">
-               <NuxtLink to="/employees">Employees</NuxtLink>
-            </li>
-            <li class="active bg-primary_white rounded-r-[1rem] py-2 items-center text-black">
-               <NuxtLink to="/records">Records</NuxtLink>
-            </li>
-            <li class="py-2 items-center">
-               <NuxtLink to="/settings">Settings</NuxtLink>
-            </li>
-         </div>
-         <div class="self-end mb-1">
-            <button @click="logout" class="font-bold btn btn-sm btn-ghost btn-circle w-28">Logout<img class="mx-2 w-4 h-4"
-                  src="~/assets/icons/exit_white.png"></button>
-         </div>
-      </ul>
    </div>
    <p class="text-transparent">{{ componentKey }} {{ isLoading }}</p>
 </template>

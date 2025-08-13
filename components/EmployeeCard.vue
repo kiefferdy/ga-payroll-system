@@ -1,43 +1,91 @@
 <template>
-   <div class="card card-side bg-off_white justify-between items-center h-12 p-5 m-5 mx-10">
-      <div class="card card-side items-center">
-         <img src="~/assets/icons/user.png" class="w-8 rounded-full me-2" />
-         <p>{{ employee.first_name }} {{ employee.last_name }}</p>
-      </div>
-      <div class="card card-side">
-         <div class="me-10">
-            <div class="flex flex-row self-end">
-               <p class="mr-4">Status:</p>
-               <div :class="[employee.time_in_status ? 'bg-clock_in_green' : 'bg-clock_out_red']" class="rounded-full w-2.5 h-2.5 mx-1 mt-2"></div>
-               <p>{{ employee.time_in_status ? 'In' : 'Out' }}</p>         
+   <div class="bg-white rounded-xl shadow-sm border border-search_stroke_gray hover:shadow-md transition-all duration-200 overflow-hidden">
+      <!-- Card Header with Avatar and Status -->
+      <div class="p-6">
+         <div class="flex items-start justify-between mb-4">
+            <div class="flex items-center space-x-3">
+               <div class="relative">
+                  <div class="w-12 h-12 bg-gradient-to-br from-primary_green to-dark_green rounded-full flex items-center justify-center">
+                     <img src="~/assets/icons/user.png" class="w-6 h-6" />
+                  </div>
+                  <!-- Status indicator -->
+                  <div 
+                     :class="[employee.time_in_status ? 'bg-clock_in_green' : 'bg-clock_out_red']" 
+                     class="absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white"
+                  ></div>
+               </div>
+               <div>
+                  <h3 class="font-semibold text-dark_gray text-lg">{{ employee.first_name }} {{ employee.last_name }}</h3>
+                  <p class="text-sm text-dark_gray/60 capitalize">{{ employee.rank || 'Employee' }}</p>
+               </div>
             </div>
-            <div v-if="isAccountLocked" class="flex flex-row self-end mt-1">
-               <p class="mr-4 text-red-600 text-xs font-semibold">🔒 Account Locked</p>
+            
+            <!-- Lock status badge -->
+            <div v-if="isAccountLocked" class="flex items-center space-x-1 bg-clock_out_red/10 text-clock_out_red px-2 py-1 rounded-full text-xs font-medium">
+               <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+               </svg>
+               <span>Locked</span>
             </div>
-            <p class="text-xs">Last updated: {{ formatTime(employee.last_updated) }}</p>
          </div>
-         <div class="card card-side items-center">
+
+         <!-- Employee Details -->
+         <div class="space-y-3 mb-6">
+            <div class="flex items-center justify-between py-2 border-b border-search_stroke_gray/50">
+               <span class="text-sm text-dark_gray/70">Status:</span>
+               <div class="flex items-center space-x-2">
+                  <div :class="[employee.time_in_status ? 'bg-clock_in_green' : 'bg-clock_out_red']" class="w-2 h-2 rounded-full"></div>
+                  <span class="text-sm font-medium" :class="[employee.time_in_status ? 'text-clock_in_green' : 'text-clock_out_red']">
+                     {{ employee.time_in_status ? 'Clocked In' : 'Clocked Out' }}
+                  </span>
+               </div>
+            </div>
+            
+            <div class="flex items-center justify-between py-2 border-b border-search_stroke_gray/50">
+               <span class="text-sm text-dark_gray/70">Employee ID:</span>
+               <span class="text-sm font-mono text-dark_gray">{{ employee.id.slice(0, 8) }}...</span>
+            </div>
+            
+            <div class="flex items-center justify-between py-2">
+               <span class="text-sm text-dark_gray/70">Last Activity:</span>
+               <span class="text-sm text-dark_gray">{{ formatTime(employee.last_updated) }}</span>
+            </div>
+         </div>
+
+         <!-- Action Buttons -->
+         <div class="flex items-center justify-end space-x-2">
             <button 
                v-if="isAccountLocked" 
                @click="handleUnlock" 
                :disabled="isUnlocking"
-               class="btn btn-warning btn-sm me-2" 
+               class="btn btn-sm bg-orange-500 hover:bg-orange-600 text-white border-none" 
                title="Unlock Account"
             >
                <span v-if="isUnlocking" class="loading loading-spinner loading-xs"></span>
-               <span v-else>🔓</span>
+               <svg v-else class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" />
+               </svg>
             </button>
+            
             <NuxtLink :to="`/edit-account/${employee.id}`">
-               <button class="btn btn-info btn-sm me-2"><img src="~/assets/icons/edit.png" class="w-4"></button>
+               <button class="btn btn-sm bg-blue-500 hover:bg-blue-600 text-white border-none" title="Edit Employee">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  </svg>
+               </button>
             </NuxtLink>
-            <button @click="handleDelete" class="btn btn-error btn-sm"><img src="~/assets/icons/delete.png" class="w-4"></button>
-         </div>         
+            
+            <button @click="handleDelete" class="btn btn-sm bg-clock_out_red hover:bg-red-700 text-white border-none" title="Delete Employee">
+               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+               </svg>
+            </button>
+         </div>
       </div>
    </div>
 </template>
 
 <script setup>
-
    import { useRouter } from 'vue-router';
 
    const supabase = useSupabaseClient();
@@ -62,7 +110,7 @@
 
    const formatTime = (time) => {
       const formattedTime = new Date(time);
-      return formattedTime.toLocaleString();
+      return formattedTime.toLocaleDateString() + ' ' + formattedTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
    };
 
    // Handles account unlock
@@ -191,5 +239,4 @@
 
    // Functions to be run once page loads
    verifyUserRank();
-
 </script>
