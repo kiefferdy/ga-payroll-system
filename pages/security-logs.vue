@@ -1,7 +1,11 @@
 <template>
-  <Title>Security Audit Logs</Title>
-  <div class="min-h-screen bg-primary_white p-4">
-    <div class="container mx-auto">
+  <Title>Admin - Security Logs</Title>
+  <div class="min-h-screen bg-primary_white">
+    <!-- Top Navigation -->
+    <AdminNavbar currentPage="security-logs" />
+
+    <!-- Main Content -->
+    <div class="p-6 max-w-7xl mx-auto">
       <h1 class="text-3xl font-bold text-black mb-6">Security Audit Logs</h1>
       
       <!-- Filters -->
@@ -197,11 +201,10 @@
 import { ref, computed, onMounted } from 'vue'
 import { logSecurityEvent } from '~/utils/security'
 
-definePageMeta({
-  layout: false
-})
 
 const supabase = useSupabaseClient()
+
+// Permission management not needed - handled by AdminNavbar
 
 // Data
 const logs = ref([])

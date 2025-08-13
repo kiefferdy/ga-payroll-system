@@ -2,28 +2,7 @@
    <Title>Admin - Employees</Title>
    <div class="min-h-screen bg-primary_white">
       <!-- Top Navigation -->
-      <div class="bg-dark_green text-white px-6 py-4">
-         <div class="flex justify-between items-center">
-            <div class="flex items-center space-x-6">
-               <NuxtLink to="/" class="flex items-center space-x-2 hover:text-primary_green transition-colors">
-                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                  </svg>
-                  <span>Back to Dashboard</span>
-               </NuxtLink>
-               <nav class="flex space-x-6">
-                  <NuxtLink v-if="canAccessEmployees" to="/employees" class="px-3 py-2 bg-primary_white text-dark_green rounded-lg font-semibold">Employees</NuxtLink>
-                  <NuxtLink v-if="canAccessRecords" to="/records" class="px-3 py-2 hover:bg-button_green transition-colors rounded-lg">Records</NuxtLink>
-                  <NuxtLink v-if="canAccessRoles" to="/roles" class="px-3 py-2 hover:bg-button_green transition-colors rounded-lg">Roles</NuxtLink>
-                  <NuxtLink v-if="canAccessSettings" to="/settings" class="px-3 py-2 hover:bg-button_green transition-colors rounded-lg">Settings</NuxtLink>
-               </nav>
-            </div>
-            <button @click="logout" class="flex items-center space-x-2 hover:bg-button_green px-3 py-2 rounded-lg transition-colors">
-               <span>Logout</span>
-               <img class="w-4 h-4" src="~/assets/icons/exit_white.png">
-            </button>
-         </div>
-      </div>
+      <AdminNavbar currentPage="employees" />
 
       <!-- Main Content -->
       <div class="p-6 max-w-7xl mx-auto">
@@ -147,7 +126,7 @@
    const router = useRouter();
    
    // Permission management
-   const { canAccessEmployees, canAccessSettings, canAccessRoles, canAccessRecords, loadPermissions, hasPermission } = usePermissions();
+   const { hasPermission } = usePermissions();
    
    // Additional permission checks
    const canCreateUsers = ref(false);
@@ -158,9 +137,6 @@
 
    // Refs for template
    const Employees = ref([]);
-
-   // Import simplified auth utilities
-   const { logout } = useAuth()
    
    // Fetch all employees with their roles
    const fetchEmployees = async () => {
@@ -289,7 +265,6 @@
       try {
          await verifyUserAccess();
          await fetchEmployees();
-         await loadPermissions();
          await checkCreatePermission();
       } catch (error) {
          console.error('Error initializing employees page:', error);

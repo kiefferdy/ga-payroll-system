@@ -1,29 +1,8 @@
 <template>
-  <Title>Roles Management</Title>
+  <Title>Admin - Roles</Title>
   <div class="min-h-screen bg-primary_white">
     <!-- Top Navigation -->
-    <div class="bg-dark_green text-white px-6 py-4">
-      <div class="flex justify-between items-center">
-        <div class="flex items-center space-x-6">
-          <NuxtLink to="/" class="flex items-center space-x-2 hover:text-primary_green transition-colors">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </svg>
-            <span>Back to Dashboard</span>
-          </NuxtLink>
-          <nav class="flex space-x-6">
-            <NuxtLink v-if="canAccessEmployees" to="/employees" class="px-3 py-2 hover:bg-button_green transition-colors rounded-lg">Employees</NuxtLink>
-            <NuxtLink v-if="canAccessRecords" to="/records" class="px-3 py-2 hover:bg-button_green transition-colors rounded-lg">Records</NuxtLink>
-            <NuxtLink v-if="canAccessRoles" to="/roles" class="px-3 py-2 bg-primary_white text-dark_green rounded-lg font-semibold">Roles</NuxtLink>
-            <NuxtLink v-if="canAccessSettings" to="/settings" class="px-3 py-2 hover:bg-button_green transition-colors rounded-lg">Settings</NuxtLink>
-          </nav>
-        </div>
-        <button @click="logout" class="flex items-center space-x-2 hover:bg-button_green px-3 py-2 rounded-lg transition-colors">
-          <span>Logout</span>
-          <img class="w-4 h-4" src="~/assets/icons/exit_white.png">
-        </button>
-      </div>
-    </div>
+    <AdminNavbar currentPage="roles" />
 
     <div class="max-w-7xl mx-auto p-6">
       <!-- Header -->
@@ -457,8 +436,7 @@ interface UserWithRoles {
 // Reactive data  
 const supabase = useSupabaseClient<any>()
 
-// Permission management
-const { canAccessEmployees, canAccessSettings, canAccessRoles, canAccessRecords, loadPermissions: loadUserPermissions } = usePermissions()
+// Permission management not needed - handled by AdminNavbar
 
 const loading = ref(false)
 const saving = ref(false)
@@ -809,13 +787,8 @@ async function saveUserRoles() {
   }
 }
 
-// Simplified logout function  
-const router = useRouter()
-const { logout } = useAuth()
-
 // Initialize data when component mounts
 onMounted(async () => {
   await refreshData()
-  await loadUserPermissions()
 })
 </script>

@@ -1,64 +1,7 @@
 <template>
   <div class="bg-primary_white">
     <!-- Top Navigation -->
-    <div class="bg-dark_green px-6 py-4 text-white">
-      <div class="flex items-center justify-between">
-        <div class="flex items-center space-x-6">
-          <NuxtLink
-            to="/"
-            class="flex items-center space-x-2 transition-colors hover:text-primary_green"
-          >
-            <svg
-              class="h-5 w-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M10 19l-7-7m0 0l7-7m-7 7h18"
-              />
-            </svg>
-            <span>Back to Dashboard</span>
-          </NuxtLink>
-          <nav class="flex space-x-6">
-            <NuxtLink
-              v-if="canAccessEmployees"
-              to="/employees"
-              class="rounded-lg px-3 py-2 transition-colors hover:bg-button_green"
-              >Employees</NuxtLink
-            >
-            <NuxtLink
-              v-if="canAccessRecords"
-              to="/records"
-              class="rounded-lg bg-primary_white px-3 py-2 font-semibold text-dark_green"
-              >Records</NuxtLink
-            >
-            <NuxtLink
-              v-if="canAccessRoles"
-              to="/roles"
-              class="rounded-lg px-3 py-2 transition-colors hover:bg-button_green"
-              >Roles</NuxtLink
-            >
-            <NuxtLink
-              v-if="canAccessSettings"
-              to="/settings"
-              class="rounded-lg px-3 py-2 transition-colors hover:bg-button_green"
-              >Settings</NuxtLink
-            >
-          </nav>
-        </div>
-        <button
-          @click="logout"
-          class="flex items-center space-x-2 rounded-lg px-3 py-2 transition-colors hover:bg-button_green"
-        >
-          <span>Logout</span>
-          <img class="h-4 w-4" src="~/assets/icons/exit_white.png" />
-        </button>
-      </div>
-    </div>
+    <AdminNavbar currentPage="records" />
 
     <!-- Header Section -->
     <div class="mx-auto max-w-7xl p-6">
@@ -220,11 +163,6 @@
 </template>
 
 <script setup lang="ts">
-import { useRouter } from "vue-router";
-import {
-  logSecurityEvent,
-  logAuthenticationAttempt,
-} from "~/utils/security";
 
 withDefaults(
   defineProps<{
@@ -243,22 +181,7 @@ withDefaults(
   },
 );
 
-const supabase = useSupabaseClient();
-const router = useRouter();
-
-// Permission checks for navigation
-const { 
-  canAccessEmployees, 
-  canAccessRecords, 
-  canAccessRoles, 
-  canAccessSettings,
-  loadPermissions
-} = usePermissions();
-
-// Load permissions on component mount
-onMounted(() => {
-  loadPermissions();
-});
+// No need for permission checks or logout - handled by AdminNavbar
 
 // Utility function to format currency
 const formatCurrency = (amount: number): string => {
@@ -267,9 +190,6 @@ const formatCurrency = (amount: number): string => {
     maximumFractionDigits: 2,
   }).format(Math.abs(amount));
 };
-
-// Simplified logout function
-const { logout } = useAuth();
 
 // Page is already protected by auth.global.ts middleware with proper permissions
 
