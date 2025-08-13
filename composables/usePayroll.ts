@@ -191,7 +191,8 @@ export const usePayroll = () => {
         .eq("user_id", employeeId)
         .gte("date", startDate)
         .lte("date", endDate)
-        .order("date", { ascending: true });
+        .order("date", { ascending: true })
+        .order("time_in", { ascending: true });
 
       if (error) throw error;
       return data || [];
@@ -304,17 +305,39 @@ export const usePayroll = () => {
       ? calculateTotalDuration(timesheetEntries) 
       : { hours: 0, minutes: 0 };
     
-    // For display purposes, show first entry's times (or could show summary)
+    // Find actual first clock-in and last clock-out times from all entries
+    let firstClockIn = "";
+    let lastClockOut = "";
     const firstEntry = timesheetEntries?.[0];
-    const lastEntry = timesheetEntries?.[timesheetEntries.length - 1];
     const hasMultiple = timesheetEntries && timesheetEntries.length > 1;
+    
+    if (timesheetEntries && timesheetEntries.length > 0) {
+      // Sort entries by time_in to ensure we get the actual first and last times
+      const sortedEntries = [...timesheetEntries].sort((a, b) => 
+        new Date(a.time_in).getTime() - new Date(b.time_in).getTime()
+      );
+      
+      // First clock-in time (earliest time_in)
+      firstClockIn = convertToPhilippinesTime(sortedEntries[0].time_in);
+      
+      // Last clock-out time (find entry with latest time_out)
+      const lastEntry = sortedEntries.reduce((latest, current) => 
+        new Date(current.time_out).getTime() > new Date(latest.time_out).getTime() ? current : latest
+      );
+      lastClockOut = convertToPhilippinesTime(lastEntry.time_out);
+      
+      // Debug logging for multiple entries
+      if (hasMultiple) {
+        console.log(`${date}: Multiple entries (${timesheetEntries.length}) - First: ${firstClockIn}, Last: ${lastClockOut}`);
+      }
+    }
     
     const dayData: DayData = {
       date,
       timesheet: firstEntry ? { ...firstEntry } : undefined, // Keep for backward compatibility
       timesheetEntries: timesheetEntries ? timesheetEntries.map(entry => ({ ...entry })) : [], // All entries for detailed view (create mutable copy)
-      timeIn: firstEntry ? convertToPhilippinesTime(firstEntry.time_in) : "",
-      timeOut: lastEntry ? convertToPhilippinesTime(lastEntry.time_out) : "",
+      timeIn: firstClockIn,
+      timeOut: lastClockOut,
       duration: firstEntry?.duration_json || "",
       hours: duration.hours,
       minutes: duration.minutes,

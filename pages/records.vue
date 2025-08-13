@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import type { Employee, WeekOption } from "~/types/payroll";
+import { exportPayrollSummary } from "~/utils/payrollExport";
 
 // Initialize payroll composable
 const {
@@ -108,8 +109,23 @@ const handleCarryForwardBalance = () => {
 };
 
 const handleExportSummary = () => {
-  // TODO: Implement export logic
-  console.log("Export summary requested");
+  // Validate that we have all required data
+  if (!state.selectedEmployee || !state.selectedWeek || !state.weekData || !state.payrollData) {
+    console.error("Missing required data for export");
+    return;
+  }
+
+  const exportData = {
+    employee: state.selectedEmployee,
+    weekData: state.weekData,
+    payrollData: state.payrollData,
+    weekTotal: weekTotal.value,
+    finalBalance: finalBalance.value,
+    selectedWeek: currentWeekLabel.value,
+  };
+
+  // Export as PDF by default (user can be given format options in the future)
+  exportPayrollSummary(exportData, 'pdf');
 };
 
 // Initialize data
