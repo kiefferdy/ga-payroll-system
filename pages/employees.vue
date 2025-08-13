@@ -152,7 +152,7 @@
    const fetchEmployees = async () => {
       const { data, error } = await supabase
          .from('Employees')
-         .select('*, failed_login_attempts, locked_until')
+         .select('*, failed_login_attempts, locked_until, requires_otp')
          .order('first_name', { ascending: true });
 
       Employees.value = data || [];
