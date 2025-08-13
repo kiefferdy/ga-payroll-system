@@ -24,33 +24,59 @@ function looksLikeProjectKey(jwt?: string): boolean {
 }
 
 /**
- * Get authenticated user from server request using @nuxtjs/supabase
+ * Get authenticated user from server request with robust token validation
  * This properly handles session cookies and authentication
  */
 export async function getUserFromRequest(event: H3Event<EventHandlerRequest>) {
   try {
-    const cookieToken = getCookie(event, 'sb-access-token')
-    if (cookieToken) {
-      const supabase = await serverSupabaseClient(event)
-      const { data: { user }, error } = await supabase.auth.getUser(cookieToken)
-      if (error) throw error
-      return { user, error: null }
+    // Try multiple cookie names that Supabase might use
+    const cookieTokens = [
+      getCookie(event, 'sb-access-token'),
+      getCookie(event, 'supabase-auth-token'),
+      getCookie(event, 'sb-auth-token')
+    ].filter(Boolean)
+
+    for (const cookieToken of cookieTokens) {
+      if (cookieToken && !looksLikeProjectKey(cookieToken)) {
+        try {
+          const supabase = await serverSupabaseClient(event)
+          const { data: { user }, error } = await supabase.auth.getUser(cookieToken)
+          if (!error && user?.id) {
+            return { user, error: null }
+          }
+          // Log the error but continue trying other tokens
+          if (error) {
+            console.debug('Cookie token validation failed:', error.message)
+          }
+        } catch (tokenError: any) {
+          console.debug('Token parsing error:', tokenError?.message)
+          // Continue to next token
+        }
+      }
     }
 
     // Fallback to Authorization header only if it's a real user token
     const auth = getHeader(event, 'authorization')
     const bearer = auth?.startsWith('Bearer ') ? auth.slice(7) : undefined
     if (bearer && !looksLikeProjectKey(bearer)) {
-      const supabase = await serverSupabaseClient(event)
-      const { data: { user }, error } = await supabase.auth.getUser(bearer)
-      if (error) throw error
-      return { user, error: null }
+      try {
+        const supabase = await serverSupabaseClient(event)
+        const { data: { user }, error } = await supabase.auth.getUser(bearer)
+        if (!error && user?.id) {
+          return { user, error: null }
+        }
+        if (error) {
+          console.debug('Bearer token validation failed:', error.message)
+        }
+      } catch (headerError: any) {
+        console.debug('Header token parsing error:', headerError?.message)
+      }
     }
 
-    return { user: null, error: 'No authenticated user' }
+    return { user: null, error: 'No valid authentication token found' }
   } catch (error: any) {
     console.error('Error getting user from request:', error?.message || error)
-    return { user: null, error: 'Authentication failed' }
+    return { user: null, error: 'Authentication validation failed' }
   }
 }
 
@@ -74,26 +100,30 @@ export function getServiceRoleClient(event: H3Event<EventHandlerRequest>) {
 }
 
 /**
- * Middleware to enforce authentication on API endpoints
+ * Simplified authentication middleware
+ * Focuses on reliability over complex error handling
  */
 export async function requireAuth(event: H3Event<EventHandlerRequest>) {
   try {
+    // Use the built-in Supabase auth function
     const user = await serverSupabaseUser(event)
     
     if (!user) {
       throw createError({
         statusCode: 401,
-        statusMessage: 'Authentication required'
+        statusMessage: 'Authentication required - please log in'
       })
     }
     
     return user
+    
   } catch (error: any) {
-    // Handle JWT parsing errors
-    console.error('Authentication error:', error)
+    console.warn('Authentication failed:', error?.message || error)
+    
+    // Simplified error handling
     throw createError({
       statusCode: 401,
-      statusMessage: 'Invalid authentication token'
+      statusMessage: 'Authentication failed - please log in again'
     })
   }
 }

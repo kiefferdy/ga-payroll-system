@@ -132,7 +132,7 @@
                </div>
             </div>
             <div v-else v-for="employee in displayedEmployees" :key="employee.id">
-               <EmployeeCard :employee="employee" @employee-unlocked="handleEmployeeUnlocked" />
+               <EmployeeCard :employee="employee" @employee-unlocked="handleEmployeeUnlocked" @employee-deleted="handleEmployeeDeleted" />
             </div>
          </div>
       </div>
@@ -159,6 +159,9 @@
    // Refs for template
    const Employees = ref([]);
 
+   // Import auth cleanup utilities
+   const { emergencyAuthReset } = useAuthCleanup()
+   
    // Fetch all employees with their roles
    const fetchEmployees = async () => {
       try {
@@ -169,9 +172,16 @@
          
          // Handle authentication errors
          if (error?.status === 401 || error?.statusMessage?.includes('Authentication')) {
-            console.log('Authentication expired, redirecting to login');
-            await router.push('/login');
-            return;
+            // Check if it's a JWT corruption issue
+            if (error?.statusMessage?.includes('claim') || error?.statusMessage?.includes('JWT')) {
+               console.log('JWT token corruption detected, triggering auth reset');
+               await emergencyAuthReset();
+               return;
+            } else {
+               console.log('Authentication expired, redirecting to login');
+               await router.push('/login');
+               return;
+            }
          }
          
          Employees.value = []
@@ -180,6 +190,12 @@
 
    // Handle employee unlock event
    const handleEmployeeUnlocked = () => {
+      fetchEmployees(); // Refresh the employee list
+   };
+
+   // Handle employee deletion event
+   const handleEmployeeDeleted = () => {
+      console.log('Employee deleted, refreshing list');
       fetchEmployees(); // Refresh the employee list
    };
 
@@ -275,10 +291,29 @@
       }
    };
 
+   // Watch for route changes to handle soft refresh
+   const route = useRoute();
+   watch(() => route.query.refresh, (newRefresh) => {
+      if (newRefresh) {
+         console.log('Soft refresh triggered, reloading employee data');
+         fetchEmployees();
+      }
+   });
+
    // Functions to be run once page loads
-   verifyUserAccess();
-   fetchEmployees();
-   loadPermissions();
-   checkCreatePermission();
+   onMounted(async () => {
+      try {
+         await verifyUserAccess();
+         await fetchEmployees();
+         await loadPermissions();
+         await checkCreatePermission();
+      } catch (error) {
+         console.error('Error initializing employees page:', error);
+         // If there's an authentication error during initialization, redirect to login
+         if (error?.status === 401) {
+            await router.push('/login');
+         }
+      }
+   });
 
 </script>

@@ -216,32 +216,30 @@
          const newUserId = result.body.data.user.id;
          clearNotifs();
 
-         // Insert a new row in the Employees table for the new user
-         const { insertError } = await supabase
+         // Update the Employee record created by the trigger with user details
+         const { error: updateError } = await supabase
             .from('Employees')
-            .insert([
-               { 
-                  id: newUserId,
-                  first_name: cleanFirstName,
-                  last_name: cleanLastName,
-                  requires_otp: needsOTP.value,
-                  last_updated: new Date()
-               }
-            ]);
+            .update({ 
+               first_name: cleanFirstName,
+               last_name: cleanLastName,
+               requires_otp: needsOTP.value,
+               last_updated: new Date()
+            })
+            .eq('id', newUserId);
 
-         if (insertError) {
+         if (updateError) {
             loadingNotif.value = false;
             insertionError.value = true;
-            console.error('Error inserting into Employees table:', insertError);
+            console.error('Error updating Employee record:', updateError);
             
-            // Log database insertion error
+            // Log database update error
             await logSecurityEvent({
                eventType: 'DATABASE_ERROR',
                userId: user.id,
                userEmail: user.email,
                details: { 
-                  operation: 'Employee record creation',
-                  error: insertError.message,
+                  operation: 'Employee record update',
+                  error: updateError.message,
                   newUserId
                },
                severity: 'HIGH'

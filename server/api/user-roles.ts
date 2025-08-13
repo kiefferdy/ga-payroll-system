@@ -73,20 +73,31 @@ export default defineEventHandler(async (event) => {
       })
     }
 
-    // Add new role assignments
+    // Add new role assignments using UPSERT to handle existing records
     if (roleIds.length > 0) {
-      const roleAssignments = roleIds.map((roleId: number) => ({
-        user_id: userId,
-        role_id: roleId,
-        assigned_by: currentUser.id,
-        is_active: true
-      }))
+      // Use individual upserts to handle existing records properly
+      const upsertPromises = roleIds.map((roleId: number) => 
+        (supabase as any)
+          .from('UserRoles')
+          .upsert({
+            user_id: userId,
+            role_id: roleId,
+            assigned_by: currentUser.id,
+            is_active: true,
+            assigned_at: new Date().toISOString()
+          }, {
+            onConflict: 'user_id,role_id'
+          })
+      )
 
-      const { error: insertError } = await (supabase as any)
-        .from('UserRoles')
-        .insert(roleAssignments)
-
-      if (insertError) {
+      const results = await Promise.all(upsertPromises)
+      
+      // Check for any errors in the upsert operations
+      const errors = results.filter(result => result.error).map(result => result.error)
+      
+      if (errors.length > 0) {
+        console.error('Role assignment upsert errors:', errors)
+        
         // Try to rollback by reactivating previous roles
         await (supabase as any)
           .from('UserRoles')
@@ -94,9 +105,18 @@ export default defineEventHandler(async (event) => {
           .eq('user_id', userId)
           .in('role_id', currentRoleIds)
 
+        // Provide specific error message
+        const firstError = errors[0]
+        let errorMessage = 'Failed to assign new roles'
+        if (firstError.code === '23503') {
+          errorMessage = 'Invalid role or user ID provided'
+        } else if (firstError.message) {
+          errorMessage = `Role assignment failed: ${firstError.message}`
+        }
+
         throw createError({
           statusCode: 500,
-          statusMessage: 'Failed to assign new roles'
+          statusMessage: errorMessage
         })
       }
     }

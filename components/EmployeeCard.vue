@@ -208,7 +208,7 @@ const props = defineProps({
   employee: Object,
 });
 
-const emit = defineEmits(["employee-unlocked"]);
+const emit = defineEmits(["employee-unlocked", "employee-deleted"]);
 
 // Reactive state for unlock operation
 const isUnlocking = ref(false);
@@ -309,48 +309,60 @@ const handleDelete = async () => {
     "Are you sure you want to proceed? Deleting this user will erase all of their data. This action cannot be undone.",
   );
 
-  if (confirmDelete) {
-    const { data, error } = await supabase
-      .from("Employees")
-      .delete()
-      .eq("id", props.employee.id);
+  if (!confirmDelete) {
+    return;
+  }
 
-    if (error) {
-      console.log("Error deleting user: ", error);
-      alert(
-        "An error occurred with the deletion process. The user was not deleted.",
-      );
-    } else {
-      console.log("Successfully deleted user:", data);
-      const {
-        data: { user },
-      } = await supabase.auth.getUser(); // Get the user performing the action
-      console.log("Retrieved user:", user);
-
-      // Sending delete user request to server
-      const response = await fetch("/api/delete-user", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          targetId: props.employee.id,
-          userId: user.id,
-        }),
-      });
-
-      const result = await response.json();
-      if (!response.ok) {
-        alert("Unable to delete the user's credentials.");
-      } else {
-        console.log(
-          "Successfully deleted user from Supabase Auth:",
-          result.data,
-        );
-        alert("The user has been successfully deleted!");
-        router.go();
-      }
+  try {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser(); // Get the user performing the action
+    
+    if (!user) {
+      alert("Authentication required. Please log in again.");
+      return;
     }
+
+    console.log("Retrieved user:", user);
+
+    // Send delete user request to server - this will handle both auth and employee deletion
+    const response = await fetch("/api/delete-user", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        targetId: props.employee.id,
+      }),
+    });
+
+    const result = await response.json();
+    
+    if (response.ok && result.status === 200) {
+      console.log("Successfully deleted user:", result);
+      alert("The user has been successfully deleted!");
+      
+      // Emit event to parent component for immediate refresh
+      emit("employee-deleted");
+      
+      // Also use soft refresh as backup to avoid token corruption
+      try {
+        // Small delay to allow event to process first
+        await new Promise(resolve => setTimeout(resolve, 100));
+        // Navigate to the same route to trigger a soft refresh
+        await router.push({ path: '/employees', query: { refresh: Date.now() } });
+      } catch (navError) {
+        console.warn('Soft refresh failed, will rely on event emission:', navError);
+        // Don't use hard refresh as it causes token corruption
+      }
+    } else {
+      console.error("Delete user error:", result);
+      alert(`Failed to delete user: ${result.body?.error?.message || 'Unknown error'}`);
+    }
+    
+  } catch (error) {
+    console.error("Error during deletion process:", error);
+    alert("An error occurred during the deletion process. Please try again.");
   }
 };
 

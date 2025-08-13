@@ -652,9 +652,10 @@ async function saveRole() {
 
     cancelEditRole()
     await refreshData()
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error saving role:', error)
-    alert('Error saving role. Please try again.')
+    const errorMessage = error?.data?.statusMessage || error?.statusMessage || error?.message || 'Failed to save role'
+    alert('Error saving role: ' + errorMessage)
   } finally {
     saving.value = false
   }
@@ -737,9 +738,10 @@ async function saveRolePermissions() {
 
     cancelPermissionManagement()
     await refreshData()
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error saving permissions:', error)
-    alert('Error saving permissions. Please try again.')
+    const errorMessage = error?.data?.statusMessage || error?.statusMessage || error?.message || 'Failed to save permissions'
+    alert('Error saving permissions: ' + errorMessage)
   } finally {
     savingPermissions.value = false
   }
@@ -794,31 +796,25 @@ async function saveUserRoles() {
     if (response.success) {
       cancelUserRoleManagement()
       await refreshData()
+    } else {
+      console.error('Role assignment failed - API returned success: false')
+      alert('Failed to assign roles. Please try again.')
     }
   } catch (error: any) {
     console.error('Error saving user roles:', error)
-    const errorMessage = error?.data?.statusMessage || error?.message || 'Unknown error'
+    const errorMessage = error?.data?.statusMessage || error?.statusMessage || error?.message || 'Unknown error occurred'
     alert('Error saving user roles: ' + errorMessage)
   } finally {
     saving.value = false
   }
 }
 
-// Logout function
+// Enhanced logout function
 const router = useRouter()
+const { enhancedLogout } = useAuthCleanup()
 
 const logout = async () => {
-  try {
-    const { error } = await supabase.auth.signOut()
-    if (error) {
-      console.error('Error logging out:', error)
-    } else {
-      await router.push('/login')
-    }
-  } catch (error) {
-    console.error('Logout error:', error)
-    await router.push('/login')
-  }
+  await enhancedLogout()
 }
 
 // Initialize data when component mounts
