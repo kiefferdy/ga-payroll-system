@@ -1,4 +1,5 @@
 import { logSecurityEvent } from '~/utils/security'
+import { hasPermission, PERMISSIONS } from '~/utils/permissions'
 
 export default defineNuxtRouteMiddleware(async (to) => {
   // Skip processing for Chrome DevTools and other system requests
@@ -37,39 +38,44 @@ export default defineNuxtRouteMiddleware(async (to) => {
     return navigateTo('/login')
   }
 
-  // For admin-only pages, check user role
-  const adminOnlyPages = ['/settings', '/create-account', '/employees', '/edit-account']
+  // For permission-protected pages, check user permissions
+  const pagePermissions = {
+    '/settings': PERMISSIONS.SETTINGS_READ,
+    '/create-account': PERMISSIONS.USERS_CREATE,
+    '/employees': PERMISSIONS.USERS_READ,
+    '/edit-account': PERMISSIONS.USERS_UPDATE,
+    '/roles': PERMISSIONS.ROLES_READ,
+    '/security-logs': PERMISSIONS.SECURITY_AUDIT,
+    '/records': PERMISSIONS.PAYROLL_READ
+  }
   
-  if (adminOnlyPages.some(page => to.path.startsWith(page))) {
+  const requiredPermission = pagePermissions[to.path as keyof typeof pagePermissions] || 
+                            Object.entries(pagePermissions).find(([path]) => to.path.startsWith(path))?.[1]
+  
+  if (requiredPermission) {
     try {
-      const { data, error } = await supabase
+      // Get user information for logging
+      const { data: userData, error: userError } = await supabase
         .from('Employees')
-        .select('rank, first_name, last_name')
+        .select('first_name, last_name')
         .eq('id', user.value.id)
         .single()
 
-      if (error || !data) {
-        await logSecurityEvent({
-          eventType: 'AUTHORIZATION_ERROR',
-          userId: user.value.id,
-          userEmail: user.value.email,
-          resourceAccessed: to.path,
-          details: { error: error?.message || 'User not found' },
-          severity: 'HIGH'
-        })
-        throw createError({ statusCode: 403, statusMessage: 'Access Denied' })
-      }
+      const userName = userData ? `${userData.first_name} ${userData.last_name}` : 'Unknown User'
 
-      if (!['Admin', 'Developer'].includes(data.rank)) {
+      // Check if user has the required permission
+      const hasRequiredPermission = await hasPermission(supabase, user.value.id, requiredPermission)
+
+      if (!hasRequiredPermission) {
         await logSecurityEvent({
           eventType: 'ACCESS_DENIED',
           userId: user.value.id,
           userEmail: user.value.email,
           resourceAccessed: to.path,
           details: { 
-            userRole: data.rank,
-            userName: `${data.first_name} ${data.last_name}`,
-            requiredRoles: ['Admin', 'Developer']
+            userName: userName,
+            requiredPermission: requiredPermission,
+            reason: 'Insufficient permissions'
           },
           severity: 'MEDIUM'
         })
@@ -81,6 +87,16 @@ export default defineNuxtRouteMiddleware(async (to) => {
       }
     } catch (dbError) {
       console.error('Database error in auth middleware:', dbError)
+      
+      await logSecurityEvent({
+        eventType: 'AUTHORIZATION_ERROR',
+        userId: user.value.id,
+        userEmail: user.value.email,
+        resourceAccessed: to.path,
+        details: { error: dbError instanceof Error ? dbError.message : 'Database error' },
+        severity: 'HIGH'
+      })
+      
       throw createError({ statusCode: 500, statusMessage: 'Internal Server Error' })
     }
   }

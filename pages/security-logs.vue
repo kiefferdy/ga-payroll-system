@@ -195,7 +195,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { checkUserAuthorization, logSecurityEvent } from '~/utils/security'
+import { logSecurityEvent } from '~/utils/security'
 
 definePageMeta({
   layout: false
@@ -430,36 +430,25 @@ function convertToCSV(data) {
   ).join('\n')
 }
 
-// Authorization check
-async function checkAccess() {
+// Page is already protected by auth.global.ts middleware with proper permissions
+// Only log the access event
+async function logPageAccess() {
   const { data: { user } } = await supabase.auth.getUser()
   
-  if (!user) {
-    navigateTo('/login')
-    return
-  }
-
-  const authCheck = await checkUserAuthorization(user.id, ['Admin', 'Developer'])
-  if (!authCheck.authorized) {
-    throw createError({ 
-      statusCode: 403, 
-      statusMessage: 'Access denied. Admin privileges required.' 
+  if (user) {
+    await logSecurityEvent({
+      eventType: 'SECURITY_LOGS_ACCESSED',
+      userId: user.id,
+      userEmail: user.email,
+      resourceAccessed: '/security-logs',
+      severity: 'LOW'
     })
   }
-
-  // Log security log access
-  await logSecurityEvent({
-    eventType: 'SECURITY_LOGS_ACCESSED',
-    userId: user.id,
-    userEmail: user.email,
-    resourceAccessed: '/security-logs',
-    severity: 'LOW'
-  })
 }
 
 // Lifecycle
 onMounted(async () => {
-  await checkAccess()
+  await logPageAccess()
   await fetchLogs()
 })
 </script>

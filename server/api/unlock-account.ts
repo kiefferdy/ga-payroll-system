@@ -11,7 +11,7 @@ export default defineEventHandler(async (event) => {
         }
 
         // Enforce admin authentication using RLS
-        const { role } = await requireAdmin(event);
+        await requireAdmin(event);
 
         // Get service role client only for auth.users lookup (necessary since auth.users doesn't respect RLS)
         const serviceRoleSupabase = getServiceRoleClient(event);
@@ -108,7 +108,7 @@ export default defineEventHandler(async (event) => {
                     targetName: `${currentStatus.first_name} ${currentStatus.last_name}`,
                     previousFailedAttempts: currentStatus.failed_login_attempts,
                     wasLocked: !!currentStatus.locked_until,
-                    adminRole: role
+                    adminAction: 'unlock_account'
                 },
                 severity: 'MEDIUM'
             }

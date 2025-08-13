@@ -42,7 +42,7 @@ export const exportToCSV = (data: PayrollExportData): void => {
     [""],
     ["Employee Information"],
     ["Employee Name", `${employee.first_name} ${employee.last_name}`],
-    ["Rank", employee.rank],
+    ["Role", employee.primary_role || "Employee"],
     ["Week Period", selectedWeek],
     [""],
     ["Daily Breakdown"],
@@ -245,8 +245,8 @@ export const generatePayrollHTML = (data: PayrollExportData): string => {
                     <span>${employee.id}</span>
                 </div>
                 <div class="info-item">
-                    <span class="info-label">Rank/Position:</span>
-                    <span>${employee.rank}</span>
+                    <span class="info-label">Role/Position:</span>
+                    <span>${employee.primary_role || "Employee"}</span>
                 </div>
                 <div class="info-item">
                     <span class="info-label">Pay Period:</span>

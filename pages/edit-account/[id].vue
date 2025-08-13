@@ -12,20 +12,9 @@
             <input v-model="lastName" type="text" class="input input-sm border-dark_green bg-primary_white rounded w-64" required>
          </div>
       </div>
-      <div class="card card-side justify-between mt-4">
-         <div>
-            <label class="label-text text-black mt-4 font-bold">Email*<br></label>
-            <input v-model="email" type="email" class="input input-sm border-dark_green bg-primary_white rounded w-64" required>
-         </div>
-         <div>
-            <!-- Rank Selector -->
-            <label class="label-text text-black mt-4 font-bold">Rank*<br></label>
-            <select v-model="rank" class="input input-sm border-dark_green bg-primary_white rounded w-64">
-               <option value="Employee">Employee</option>
-               <option value="Admin">Admin</option>
-               <option value="Developer">Developer</option>
-            </select>
-         </div>
+      <div class="mt-5">
+         <label class="label-text text-black mt-4 font-bold">Email*<br></label>
+         <input v-model="email" type="email" class="input input-sm border-dark_green bg-primary_white rounded w-full" required>
       </div>
       <div class="mt-5">
          <label class="label-text text-black mt-4 font-bold">Password<br></label>
@@ -164,7 +153,6 @@
             .from('Employees')
             .update([
                {
-                  rank: rank.value,
                   first_name: firstName.value,
                   last_name: lastName.value,
                   requires_otp: needsOTP.value,
@@ -213,36 +201,8 @@
       genericError.value = false;
    }
 
-   // Verification check to see if user is an admin or developer
-   const verifyUserRank = async () => {
-      const { data: { user } } = await supabase.auth.getUser();  // Get the current user
-
-      if (user) {
-         // Check if employee is an admin or developer
-         const { data, error } = await supabase
-            .from('Employees')
-            .select('rank')
-            .eq('id', user.id);
-
-         if (error) {
-            console.log("Error fetching data from Supabase:", error);
-            return;
-         } else if (data && data.length > 0) {
-            const userRole = data[0].rank;
-            if (!(userRole.toLowerCase() == 'admin' || userRole.toLowerCase() == 'developer')) {
-               alert('You do not have permission to view this page!');
-               router.push('/');
-            }
-         } else {
-            console.log("No data returned from Supabase.");
-         }
-      } else {
-         console.log("User is not logged in.");
-      }
-   }
-
-   // Functions to be run once page loads
-   verifyUserRank();
+   // Page is already protected by auth middleware with USERS_UPDATE permission
+   // No additional client-side verification needed
 
    // Fetch employee info from database
    const targetId = route.params.id;
@@ -264,6 +224,6 @@
    const password = ref('');
    const verifyPassword = ref('');
    const needsOTP = ref(employee.requires_otp);
-   const rank = ref(employee.rank);
+   // Rank removed - now managed through roles system
 
 </script>

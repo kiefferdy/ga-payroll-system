@@ -3,18 +3,21 @@
  * This implements the principle of least privilege with proper session handling
  */
 
+import type { H3Event, EventHandlerRequest } from 'h3'
 import { createError } from 'h3'
 import { serverSupabaseUser, serverSupabaseClient, serverSupabaseServiceRole } from '#supabase/server'
+import { hasPermission, isUserAdmin } from '~/utils/permissions'
 
 /**
  * Get authenticated user from server request using @nuxtjs/supabase
  * This properly handles session cookies and authentication
  */
-export async function getUserFromRequest(event: any) {
+export async function getUserFromRequest(event: H3Event<EventHandlerRequest>) {
   try {
     const user = await serverSupabaseUser(event)
     return { user, error: user ? null : 'No authenticated user' }
-  } catch (error) {
+  } catch (error: any) {
+    console.error('Error getting user from request:', error?.message || error)
     return { user: null, error: 'Authentication failed' }
   }
 }
@@ -23,7 +26,7 @@ export async function getUserFromRequest(event: any) {
  * Get authenticated Supabase client for the current user
  * This client respects RLS policies and user context
  */
-export async function getAuthenticatedClient(event: any) {
+export async function getAuthenticatedClient(event: H3Event<EventHandlerRequest>) {
   return await serverSupabaseClient(event)
 }
 
@@ -34,50 +37,117 @@ export async function getAuthenticatedClient(event: any) {
  * - System maintenance
  * - Emergency access
  */
-export function getServiceRoleClient(event: any) {
+export function getServiceRoleClient(event: H3Event<EventHandlerRequest>) {
   return serverSupabaseServiceRole(event)
 }
 
 /**
  * Middleware to enforce authentication on API endpoints
  */
-export async function requireAuth(event: any) {
-  const user = await serverSupabaseUser(event)
-  
-  if (!user) {
+export async function requireAuth(event: H3Event<EventHandlerRequest>) {
+  try {
+    const user = await serverSupabaseUser(event)
+    
+    if (!user) {
+      throw createError({
+        statusCode: 401,
+        statusMessage: 'Authentication required'
+      })
+    }
+    
+    return user
+  } catch (error: any) {
+    // Handle JWT parsing errors
+    console.error('Authentication error:', error)
     throw createError({
       statusCode: 401,
-      statusMessage: 'Authentication required'
+      statusMessage: 'Invalid authentication token'
     })
   }
-  
-  return user
 }
 
 /**
  * Middleware to enforce admin role on API endpoints
+ * @deprecated Use requirePermission() for granular access control
  */
-export async function requireAdmin(event: any) {
+export async function requireAdmin(event: H3Event<EventHandlerRequest>) {
   const user = await requireAuth(event)
   
   // Get authenticated client that respects RLS policies
   const supabase = await serverSupabaseClient(event)
   
-  // Use authenticated client to check role (RLS will ensure user can only see their own data or admin can see others)
-  const { data, error } = await supabase
-    .from('Employees')
-    .select('rank')
-    .eq('id', user.id)
-    .single()
+  // Check using permission system
+  const hasAdminAccess = await isUserAdmin(supabase, user.id)
   
-  if (error || !data || !['Admin', 'Developer'].includes(data.rank)) {
+  if (!hasAdminAccess) {
     throw createError({
       statusCode: 403,
       statusMessage: 'Admin access required'
     })
   }
   
-  return { user, role: data.rank }
+  return { user }
+}
+
+/**
+ * Middleware to enforce specific permission on API endpoints
+ * This is the new recommended way to handle authorization
+ */
+export async function requirePermission(event: H3Event<EventHandlerRequest>, permission: string) {
+  const user = await requireAuth(event)
+  
+  // Get authenticated client that respects RLS policies
+  const supabase = await serverSupabaseClient(event)
+  
+  // Check if user has the required permission
+  const hasRequiredPermission = await hasPermission(supabase, user.id, permission)
+  
+  if (!hasRequiredPermission) {
+    throw createError({
+      statusCode: 403,
+      statusMessage: `Permission required: ${permission}`
+    })
+  }
+  
+  return { user, permission }
+}
+
+/**
+ * Middleware to enforce any of multiple permissions on API endpoints
+ */
+export async function requireAnyPermission(event: H3Event<EventHandlerRequest>, permissions: string[]) {
+  const user = await requireAuth(event)
+  
+  // Get authenticated client that respects RLS policies
+  const supabase = await serverSupabaseClient(event)
+  
+  // Check if user has any of the required permissions
+  for (const permission of permissions) {
+    if (await hasPermission(supabase, user.id, permission)) {
+      return { user, permission }
+    }
+  }
+  
+  throw createError({
+    statusCode: 403,
+    statusMessage: `One of these permissions required: ${permissions.join(', ')}`
+  })
+}
+
+/**
+ * Check if current user has a specific permission (non-throwing version)
+ */
+export async function checkUserPermission(event: H3Event<EventHandlerRequest>, permission: string): Promise<boolean> {
+  try {
+    const user = await serverSupabaseUser(event)
+    if (!user) return false
+    
+    const supabase = await serverSupabaseClient(event)
+    return await hasPermission(supabase, user.id, permission)
+  } catch (error: any) {
+    console.error('Error checking user permission:', error?.message || error)
+    return false
+  }
 }
 
 // Legacy exports for backward compatibility during transition

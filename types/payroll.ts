@@ -4,7 +4,7 @@ export interface Employee {
   id: string;
   first_name: string;
   last_name: string;
-  rank: string;
+  primary_role?: string;
   time_in_status: boolean;
   last_updated: string;
   failed_login_attempts?: number;

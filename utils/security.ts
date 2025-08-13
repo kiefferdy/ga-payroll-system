@@ -54,8 +54,17 @@ export async function checkUserAuthorization(
     })
     
     return response as { authorized: boolean; userRole?: string; error?: string }
-  } catch (error) {
+  } catch (error: any) {
     console.error('Authorization check failed:', error)
+    
+    // Handle authentication errors specifically
+    if (error?.status === 401 || error?.statusMessage?.includes('Authentication')) {
+      return { 
+        authorized: false, 
+        error: 'Authentication required. Please log in again.' 
+      }
+    }
+    
     return { authorized: false, error: 'Authorization check failed' }
   }
 }

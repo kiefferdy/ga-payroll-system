@@ -1,6 +1,7 @@
 import { defineEventHandler } from 'h3';
-import { requireAdmin, getServiceRoleClient } from '../utils/supabase-clients';
+import { requirePermission, getServiceRoleClient } from '../utils/supabase-clients';
 import { validatePasswordComplexity } from '../../utils/security';
+import { PERMISSIONS } from '../../utils/permissions';
 
 async function createUser(email: string, password: string, event: any) {
     try {
@@ -38,8 +39,8 @@ export default defineEventHandler(async (event) => {
         const body = await readBody(event);
         const { email, password } = body;
 
-        // Enforce admin authentication using RLS
-        const { role } = await requireAdmin(event);
+        // Enforce user creation permission
+        const { user, permission } = await requirePermission(event, PERMISSIONS.USERS_CREATE);
 
         if (!email || !password) {
             // Log validation failure using RLS logging
@@ -59,7 +60,7 @@ export default defineEventHandler(async (event) => {
             method: 'POST',
             body: {
                 eventType: 'USER_CREATION_ATTEMPT',
-                details: { targetEmail: email, adminRole: role },
+                details: { targetEmail: email, permission: permission },
                 severity: 'MEDIUM'
             }
         });
@@ -89,7 +90,7 @@ export default defineEventHandler(async (event) => {
                 details: { 
                     targetEmail: email,
                     newUserId: response.data?.user?.id,
-                    adminRole: role
+                    permission: permission
                 },
                 severity: 'LOW'
             }

@@ -14,6 +14,7 @@
                <nav class="flex space-x-6">
                   <NuxtLink to="/employees" class="px-3 py-2 hover:bg-button_green transition-colors rounded-lg">Employees</NuxtLink>
                   <NuxtLink to="/records" class="px-3 py-2 hover:bg-button_green transition-colors rounded-lg">Records</NuxtLink>
+                  <NuxtLink to="/roles" class="px-3 py-2 hover:bg-button_green transition-colors rounded-lg">Roles</NuxtLink>
                   <NuxtLink to="/settings" class="px-3 py-2 bg-primary_white text-dark_green rounded-lg font-semibold">Settings</NuxtLink>
                </nav>
             </div>
@@ -298,10 +299,9 @@
 
 
 <script setup>
-   import { ref, onMounted } from 'vue';
+   import { ref } from 'vue';
    import { useRouter } from 'vue-router';
    import { 
-      checkUserAuthorization, 
       logSecurityEvent,
       validateEmail as validateEmailUtil,
       logAuthenticationAttempt
@@ -529,35 +529,7 @@
       return regex.test(phoneNumber) && phoneNumber.length >= 8 && phoneNumber.length <= 16;
    }
 
-   // Enhanced user authorization check (client-side only)
-   const verifyUserRank = async () => {
-      // Only run on client-side to avoid SSR issues
-      if (process.server) return;
-      
-      try {
-         const { data: { user } } = await supabase.auth.getUser();
-
-         if (!user) {
-            await logSecurityEvent({
-               eventType: 'UNAUTHORIZED_PAGE_ACCESS',
-               resourceAccessed: '/settings',
-               details: { reason: 'No authenticated user' },
-               severity: 'HIGH'
-            });
-            await router.push('/login');
-            return;
-         }
-
-         const authCheck = await checkUserAuthorization(user.id, ['Admin', 'Developer']);
-         if (!authCheck.authorized) {
-            console.error('Unauthorized access attempt to settings page');
-            await router.push('/');
-         }
-      } catch (error) {
-         console.error('Authorization check failed:', error);
-         await router.push('/login');
-      }
-   }
+   // Page is already protected by auth.global.ts middleware with proper permissions
 
    // Enhanced logout function with security logging
    const logout = async () => {
@@ -599,10 +571,5 @@
 
    // Functions to be run once page loads
    fetchSettings();
-   
-   // Only run auth check on client-side after mount
-   onMounted(() => {
-      verifyUserRank();
-   });
 
 </script>

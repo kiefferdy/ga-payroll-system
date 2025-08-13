@@ -27,7 +27,7 @@
               {{ employee.first_name }} {{ employee.last_name }}
             </h3>
             <p class="text-sm capitalize text-dark_gray/60">
-              {{ employee.rank || "Employee" }}
+              {{ employee.primary_role || "Employee" }}
             </p>
           </div>
         </div>
@@ -222,12 +222,27 @@ const isAccountLocked = computed(() => {
 });
 
 const formatTime = (time) => {
-  const formattedTime = new Date(time);
-  return (
-    formattedTime.toLocaleDateString() +
-    " " +
-    formattedTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-  );
+  if (!time) {
+    return 'No activity recorded';
+  }
+  
+  try {
+    const formattedTime = new Date(time);
+    
+    // Check if the date is valid
+    if (isNaN(formattedTime.getTime())) {
+      return 'Invalid date';
+    }
+    
+    return (
+      formattedTime.toLocaleDateString() +
+      " " +
+      formattedTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+    );
+  } catch (error) {
+    console.error('Error formatting time:', error);
+    return 'Invalid date';
+  }
 };
 
 // Handles account unlock
@@ -339,41 +354,34 @@ const handleDelete = async () => {
   }
 };
 
-// Verification check to see if user is an admin or developer before showing settings icon
-const verifyUserRank = async () => {
+// Verification check to see if user has required permissions
+const verifyUserPermissions = async () => {
   const {
     data: { user },
-  } = await supabase.auth.getUser(); // Get the current user
+  } = await supabase.auth.getUser();
 
   if (user) {
-    // Check if employee is an admin or developer
-    const { data, error } = await supabase
-      .from("Employees")
-      .select("rank")
-      .eq("id", user.id);
-
-    if (error) {
-      console.log("Error fetching data from Supabase:", error);
-      return;
-    } else if (data && data.length > 0) {
-      const userRole = data[0].rank;
-      if (
-        !(
-          userRole.toLowerCase() == "admin" ||
-          userRole.toLowerCase() == "developer"
-        )
-      ) {
+    try {
+      // Check if user has users.read permission using the new permission system
+      const hasPermission = await $fetch('/api/check-user-permission', {
+        method: 'POST',
+        body: { permission: 'users.read' }
+      })
+      
+      if (!hasPermission) {
         alert("You do not have permission to view this page!");
         router.push("/");
       }
-    } else {
-      console.log("No data returned from Supabase.");
+    } catch (error) {
+      console.log("Error checking permissions:", error);
+      router.push("/login");
     }
   } else {
     console.log("User is not logged in.");
+    router.push("/login");
   }
 };
 
 // Functions to be run once page loads
-verifyUserRank();
+verifyUserPermissions();
 </script>

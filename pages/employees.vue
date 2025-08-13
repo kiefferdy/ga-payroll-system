@@ -14,6 +14,7 @@
                <nav class="flex space-x-6">
                   <NuxtLink to="/employees" class="px-3 py-2 bg-primary_white text-dark_green rounded-lg font-semibold">Employees</NuxtLink>
                   <NuxtLink to="/records" class="px-3 py-2 hover:bg-button_green transition-colors rounded-lg">Records</NuxtLink>
+                  <NuxtLink to="/roles" class="px-3 py-2 hover:bg-button_green transition-colors rounded-lg">Roles</NuxtLink>
                   <NuxtLink to="/settings" class="px-3 py-2 hover:bg-button_green transition-colors rounded-lg">Settings</NuxtLink>
                </nav>
             </div>
@@ -141,6 +142,7 @@
 <script setup>
 
    import { useRouter } from 'vue-router';
+   import { checkUserAuthorization } from '~/utils/security';
 
    const supabase = useSupabaseClient();
    const router = useRouter();
@@ -148,17 +150,22 @@
    // Refs for template
    const Employees = ref([]);
 
-   // Fetch all employees with additional data
+   // Fetch all employees with their roles
    const fetchEmployees = async () => {
-      const { data, error } = await supabase
-         .from('Employees')
-         .select('*, failed_login_attempts, locked_until, requires_otp')
-         .order('first_name', { ascending: true });
-
-      Employees.value = data || [];
-
-      if (error) {
-         console.error(error);
+      try {
+         const data = await $fetch('/api/employees-with-roles')
+         Employees.value = data || []
+      } catch (error) {
+         console.error('Error loading employees:', error)
+         
+         // Handle authentication errors
+         if (error?.status === 401 || error?.statusMessage?.includes('Authentication')) {
+            console.log('Authentication expired, redirecting to login');
+            await router.push('/login');
+            return;
+         }
+         
+         Employees.value = []
       }
    };
 
@@ -228,9 +235,9 @@
       filteredEmployees.value = Employees.value.filter((emp) => {
          const firstNameMatch = emp.first_name.toLowerCase().includes(searchTerm);
          const lastNameMatch = emp.last_name.toLowerCase().includes(searchTerm);
-         const rankMatch = emp.rank && emp.rank.toLowerCase().includes(searchTerm);
+         const roleMatch = emp.primary_role && emp.primary_role.toLowerCase().includes(searchTerm);
 
-         return firstNameMatch || lastNameMatch || rankMatch;
+         return firstNameMatch || lastNameMatch || roleMatch;
       });
    };
 
@@ -244,23 +251,16 @@
       const { data: { user } } = await supabase.auth.getUser();  // Get the current user
 
       if (user) {
-         // Check if employee is an admin or developer
-         const { data, error } = await supabase
-            .from('Employees')
-            .select('rank')
-            .eq('id', user.id);
-
-         if (error) {
-            console.log("Error fetching data from Supabase:", error);
-            return;
-         } else if (data && data.length > 0) {
-            const userRole = data[0].rank;
-            if (!(userRole.toLowerCase() == 'admin' || userRole.toLowerCase() == 'developer')) {
-               alert('You do not have permission to view this page!');
+         try {
+            // Check if user has admin permissions using the new permission system
+            const authCheck = await checkUserAuthorization(user.id, ['Admin', 'Developer']);
+            if (!authCheck.authorized) {
+               console.error('Unauthorized access attempt to employees page');
                router.push('/');
             }
-         } else {
-            console.log("No data returned from Supabase.");
+         } catch (error) {
+            console.log("Error checking user authorization:", error);
+            router.push('/');
          }
       } else {
          console.log("User is not logged in.");

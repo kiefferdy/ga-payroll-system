@@ -76,7 +76,6 @@
    import { ref, computed } from 'vue';
    import { useRouter } from 'vue-router';
    import { 
-      checkUserAuthorization, 
       validatePasswordComplexity, 
       validateEmail, 
       sanitizeInput,
@@ -166,12 +165,7 @@
             return;
          }
 
-         // Check authorization using centralized function
-         const authCheck = await checkUserAuthorization(user.id, ['Admin', 'Developer']);
-         if (!authCheck.authorized) {
-            genericError.value = true;
-            return;
-         }
+         // Page already protected by auth middleware with USERS_CREATE permission
 
          loadingNotif.value = true;
 
@@ -228,7 +222,6 @@
             .insert([
                { 
                   id: newUserId,
-                  rank: "Employee",
                   first_name: cleanFirstName,
                   last_name: cleanLastName,
                   requires_otp: needsOTP.value,
@@ -348,29 +341,7 @@
       loadingNotif.value = false;
    }
 
-   // Enhanced user authorization check
-   const verifyUserRank = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-
-      if (!user) {
-         await logSecurityEvent({
-            eventType: 'UNAUTHORIZED_PAGE_ACCESS',
-            resourceAccessed: '/create-account',
-            details: { reason: 'No authenticated user' },
-            severity: 'HIGH'
-         });
-         router.push('/login');
-         return;
-      }
-
-      const authCheck = await checkUserAuthorization(user.id, ['Admin', 'Developer']);
-      if (!authCheck.authorized) {
-         alert('You do not have permission to view this page!');
-         router.push('/');
-      }
-   }
-
-   // Functions to be run once page loads
-   verifyUserRank();
+   // Page is already protected by auth middleware with USERS_CREATE permission
+   // No additional client-side verification needed
 
 </script>

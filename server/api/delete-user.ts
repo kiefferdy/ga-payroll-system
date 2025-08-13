@@ -1,5 +1,6 @@
 import { defineEventHandler } from 'h3';
-import { requireAdmin, getServiceRoleClient } from '../utils/supabase-clients';
+import { requirePermission, getServiceRoleClient } from '../utils/supabase-clients';
+import { PERMISSIONS } from '../../utils/permissions';
 
 async function deleteUser(userId: string, event: any) {
     try {
@@ -20,8 +21,8 @@ export default defineEventHandler(async (event) => {
         const body = await readBody(event);
         const { targetId } = body; // targetId is the UUID of the to-be-deleted user
 
-        // Enforce admin authentication using RLS
-        const { role } = await requireAdmin(event);
+        // Enforce user deletion permission
+        const { user, permission } = await requirePermission(event, PERMISSIONS.USERS_DELETE);
 
         if (!targetId) {
             return { status: 400, body: 'Missing target user ID' };
@@ -38,7 +39,7 @@ export default defineEventHandler(async (event) => {
                     details: { 
                         targetUserId: targetId,
                         error: response.error.message,
-                        adminRole: role
+                        permission: permission
                     },
                     severity: 'HIGH'
                 }
@@ -53,7 +54,7 @@ export default defineEventHandler(async (event) => {
                 eventType: 'USER_DELETED',
                 details: { 
                     targetUserId: targetId,
-                    adminRole: role
+                    permission: permission
                 },
                 severity: 'HIGH'
             }

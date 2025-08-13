@@ -35,6 +35,11 @@
               >Records</NuxtLink
             >
             <NuxtLink
+              to="/roles"
+              class="rounded-lg px-3 py-2 transition-colors hover:bg-button_green"
+              >Roles</NuxtLink
+            >
+            <NuxtLink
               to="/settings"
               class="rounded-lg px-3 py-2 transition-colors hover:bg-button_green"
               >Settings</NuxtLink
@@ -213,7 +218,6 @@
 <script setup lang="ts">
 import { useRouter } from "vue-router";
 import {
-  checkUserAuthorization,
   logSecurityEvent,
   logAuthenticationAttempt,
 } from "~/utils/security";
@@ -283,42 +287,7 @@ const logout = async () => {
   }
 };
 
-// Enhanced user authorization check
-const verifyUserRank = async () => {
-  if (process.server) return;
+// Page is already protected by auth.global.ts middleware with proper permissions
 
-  try {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      await logSecurityEvent({
-        eventType: "UNAUTHORIZED_PAGE_ACCESS",
-        resourceAccessed: "/records",
-        details: { reason: "No authenticated user" },
-        severity: "HIGH",
-      });
-      await router.push("/login");
-      return;
-    }
-
-    const authCheck = await checkUserAuthorization(user.id, [
-      "Admin",
-      "Developer",
-    ]);
-    if (!authCheck.authorized) {
-      console.error("Unauthorized access attempt to records page");
-      await router.push("/");
-    }
-  } catch (error) {
-    console.error("Authorization check failed:", error);
-    await router.push("/login");
-  }
-};
-
-// Run authorization check on mount
-onMounted(() => {
-  verifyUserRank();
-});
+// Component is used on auth-protected pages
 </script>

@@ -51,7 +51,7 @@ export default defineEventHandler(async (event) => {
         const { targetId } = body;
 
         // Enforce admin authentication using RLS
-        const { role } = await requireAdmin(event);
+        await requireAdmin(event);
 
         if (!targetId) {
             return { status: 400, body: 'Missing UUID of user to be retrieved' };
@@ -66,7 +66,7 @@ export default defineEventHandler(async (event) => {
                 eventType: 'USER_DATA_ACCESSED',
                 details: { 
                     targetUserId: targetId,
-                    adminRole: role,
+                    adminAction: 'get_user',
                     success: !response.error
                 },
                 severity: 'LOW'

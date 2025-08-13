@@ -19,7 +19,7 @@ const route = useRoute()
 
 // Determine if this page should use full-screen layout (admin pages + account settings)
 const isFullScreenPage = computed(() => {
-   const fullScreenPages = ['/employees', '/settings', '/records', '/account']
+   const fullScreenPages = ['/employees', '/settings', '/records', '/roles', '/account']
    return fullScreenPages.includes(route.path)
 })
 </script>

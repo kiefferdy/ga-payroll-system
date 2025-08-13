@@ -94,7 +94,7 @@
                       <div
                         class="truncate text-sm capitalize text-dark_gray/60"
                       >
-                        {{ employee.rank || "Employee" }}
+                        {{ employee.primary_role || "Employee" }}
                       </div>
                     </div>
                     <div
@@ -276,8 +276,8 @@ const filteredEmployees = computed(() => {
   return props.employees.filter((employee) => {
     const fullName =
       `${employee.first_name} ${employee.last_name}`.toLowerCase();
-    const rank = (employee.rank || "").toLowerCase();
-    return fullName.includes(query) || rank.includes(query);
+    const role = (employee.primary_role || "").toLowerCase();
+    return fullName.includes(query) || role.includes(query);
   });
 });
 

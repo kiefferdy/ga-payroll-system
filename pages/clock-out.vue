@@ -43,6 +43,7 @@
 
    import { ref } from 'vue';
    import { useRouter } from 'vue-router';
+   import { checkUserAuthorization } from '~/utils/security';
 
    export default {
       setup() {
@@ -263,22 +264,14 @@
             const { data: { user } } = await supabase.auth.getUser();  // Get the current user
 
             if (user) {
-               // Check if employee is an admin or developer
-               const { data, error } = await supabase
-                  .from('Employees')
-                  .select('rank')
-                  .eq('id', user.id);
-
-               if (error) {
-                  console.log("Error fetching data from Supabase:", error);
-                  return;
-               } else if (data && data.length > 0) {
-                  const userRole = data[0].rank;
-                  if (userRole.toLowerCase() == 'admin' || userRole.toLowerCase() == 'developer') {
+               try {
+                  // Check if user has admin permissions using the new permission system
+                  const authCheck = await checkUserAuthorization(user.id, ['Admin', 'Developer']);
+                  if (authCheck.authorized) {
                      userIsAdmin.value = true;
                   }
-               } else {
-                  console.log("No data returned from Supabase.");
+               } catch (error) {
+                  console.log("Error checking user authorization:", error);
                }
             } else {
                console.log("User is not logged in.");

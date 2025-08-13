@@ -19,8 +19,15 @@ export default defineEventHandler(async (event) => {
         const rawIP = ipAddress || getClientIP(event);
         const clientIP = isValidIP(rawIP) ? rawIP : null;
 
-        // Get authenticated user context (if available)
-        const { user } = await getUserFromRequest(event);
+        // Get authenticated user context (if available, don't log errors for system events)
+        let user = null;
+        try {
+            const result = await getUserFromRequest(event);
+            user = result.user;
+        } catch (error) {
+            // Silently ignore authentication errors for system logging - user context is optional
+            user = null;
+        }
 
         // Get service role client for system logging
         const supabase = getServiceRoleClient(event);

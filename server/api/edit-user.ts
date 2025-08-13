@@ -32,7 +32,7 @@ export default defineEventHandler(async (event) => {
         const { email, password, targetId } = body; // targetId is the UUID of the to-be-edited user
 
         // Enforce admin authentication using RLS
-        const { role } = await requireAdmin(event);
+        await requireAdmin(event);
 
         if (!email || !targetId) {
             return { status: 400, body: 'Missing email or target user ID' };
@@ -49,7 +49,7 @@ export default defineEventHandler(async (event) => {
                     details: { 
                         targetUserId: targetId,
                         error: response.error.message,
-                        adminRole: role
+                        adminAction: 'edit_user'
                     },
                     severity: 'HIGH'
                 }
@@ -65,7 +65,7 @@ export default defineEventHandler(async (event) => {
                 details: { 
                     targetUserId: targetId,
                     targetEmail: email,
-                    adminRole: role,
+                    adminAction: 'edit_user',
                     passwordChanged: password !== ''
                 },
                 severity: 'MEDIUM'

@@ -3,7 +3,7 @@
    <div class="card text-black flex items-center justify-center h-[30rem] w-[60rem]">
       <!-- Settings and Account Icons -->
       <div class="absolute top-0 left-0 flex space-x-2">
-         <div v-if="userIsAdmin">
+         <div v-if="userHasSettings">
             <button @click="goToSettings" class="flex items-center justify-center">
                <img src="~/assets/icons/settings.png" alt="Settings" class="w-6 h-6">
             </button>
@@ -339,38 +339,34 @@
          };
 
          // True if user is an admin or developer
-         const userIsAdmin = ref(false);
+         const userHasSettings = ref(false);
+         const userPermissions = ref([]);
 
-         // Verification check to see if user is an admin or developer before showing settings icon
-         const verifyUserRank = async () => {
-            const { data: { user } } = await supabase.auth.getUser();  // Get the current user
-
+         // Check user permissions for settings access
+         const checkUserPermissions = async () => {
+            const { data: { user } } = await supabase.auth.getUser();
             if (user) {
-               // Check if employee is an admin or developer
-               const { data, error } = await supabase
-                  .from('Employees')
-                  .select('rank')
-                  .eq('id', user.id);
-
-               if (error) {
-                  console.log("Error fetching data from Supabase:", error);
-                  return;
-               } else if (data && data.length > 0) {
-                  const userRole = data[0].rank;
-                  if (userRole.toLowerCase() == 'admin' || userRole.toLowerCase() == 'developer') {
-                     userIsAdmin.value = true;
-                  }
-               } else {
-                  console.log("No data returned from Supabase.");
+               try {
+                  // Import permissions utility dynamically
+                  const { getUserPermissions, PERMISSIONS } = await import('~/utils/permissions');
+                  
+                  // Get user's permissions
+                  const permissions = await getUserPermissions(supabase, user.id);
+                  userPermissions.value = permissions;
+                  
+                  // Check if user has settings access
+                  userHasSettings.value = permissions.includes(PERMISSIONS.SETTINGS_READ);
+               } catch (error) {
+                  console.error("Error checking user permissions:", error);
+                  // Default to false if permission check fails
+                  userHasSettings.value = false;
                }
-            } else {
-               console.log("User is not logged in.");
             }
          }
 
          // Settings link
          const goToSettings = async () => {
-            if (userIsAdmin.value) {
+            if (userHasSettings.value) {
                router.push('/settings');
             } else {
                console.log("Access denied. User is not an admin or developer.");
@@ -384,12 +380,12 @@
 
          // Functions to be run once page loads
          fetchCurrentUser(); // Fetches the currently signed-in user
-         verifyUserRank(); // Only shows the settings icon if user is an admin or dev
+         checkUserPermissions(); // Only shows the settings icon if user is an admin or dev
          checkTimeInStatus(); // Redirect user to clock-out page if user is currently timed-in
          updateTimeAndGreeting(); // Get current time and appropriate greeting
          setInterval(updateTimeAndGreeting, 60000); // Update time and greeting every minute
 
-         return { currentTime, greeting, username, lastLoginDisplay, userIsAdmin, initializeTimeIn, logout, goToSettings, goToAccount };
+         return { currentTime, greeting, username, lastLoginDisplay, userHasSettings, userPermissions, initializeTimeIn, logout, goToSettings, goToAccount };
       }
    };
 

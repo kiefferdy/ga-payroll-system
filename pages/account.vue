@@ -454,7 +454,7 @@
       // Fetch employee data
       const { data, error } = await supabase
          .from('Employees')
-         .select('first_name, last_name, middle_name, requires_otp, monthly_pay, hourly_pay, rank')
+         .select('first_name, last_name, middle_name, requires_otp, monthly_pay, hourly_pay')
          .eq('id', user.id)
          .single();
 
@@ -472,7 +472,20 @@
          lastName.value = data.last_name || '';
          middleName.value = data.middle_name || '';
          requiresOtp.value = data.requires_otp || false;
-         employmentRank.value = data.rank || 'Employee';
+         // Get user's primary role from the new role system
+         try {
+            const { data: rolesData } = await supabase
+               .from('UserRoles')
+               .select('Roles!inner(name)')
+               .eq('user_id', user.id)
+               .eq('is_active', true)
+               .limit(1);
+            
+            employmentRank.value = rolesData && rolesData.length > 0 ? rolesData[0].Roles.name : 'Employee';
+         } catch (error) {
+            console.error('Error fetching user role:', error);
+            employmentRank.value = 'Employee';
+         }
          monthlyPay.value = data.monthly_pay || 0;
          hourlyPay.value = data.hourly_pay || 0;
       }
