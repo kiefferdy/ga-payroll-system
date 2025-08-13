@@ -5,7 +5,7 @@ import { validatePasswordComplexity } from '../../utils/security';
 async function createUser(email: string, password: string, event: any) {
     try {
         // Validate password complexity before creating user
-        const passwordValidation = validatePasswordComplexity(password);
+        const passwordValidation = await validatePasswordComplexity(password);
         if (!passwordValidation.valid) {
             return { 
                 data: null, 

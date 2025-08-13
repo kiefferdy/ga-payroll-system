@@ -128,9 +128,9 @@ const passwordProgressWidth = computed(() => {
 });
 
 // Validate password as user types
-function validatePasswordOnChange() {
+async function validatePasswordOnChange() {
   if (password.value) {
-    const validation = validatePasswordComplexity(password.value);
+    const validation = await validatePasswordComplexity(password.value);
     passwordErrors.value = validation.errors;
     passwordStrength.value = validation.strength;
   } else {
@@ -156,7 +156,7 @@ async function updatePassword() {
   }
 
   // Validate password complexity
-  const passwordValidation = validatePasswordComplexity(password.value);
+  const passwordValidation = await validatePasswordComplexity(password.value);
   if (!passwordValidation.valid) {
     errorMessage.value = 'Password does not meet complexity requirements.';
     return;
