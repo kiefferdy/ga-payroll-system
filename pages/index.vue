@@ -1,11 +1,20 @@
 <template>
    <Title>Home - {{ username }}</Title>
    <div class="card text-black flex items-center justify-center h-[30rem] w-[60rem]">
-      <!-- Settings Icon as a Button -->
-      <div v-if="userIsAdmin" class="absolute top-0 left-0">
-         <button @click="goToSettings" class="flex items-center justify-center">
-            <img src="~/assets/icons/settings.png" alt="Settings" class="w-6 h-6"> <!-- Adjust the path and size as needed -->
-         </button>
+      <!-- Settings and Account Icons -->
+      <div class="absolute top-0 left-0 flex space-x-2">
+         <div v-if="userIsAdmin">
+            <button @click="goToSettings" class="flex items-center justify-center">
+               <img src="~/assets/icons/settings.png" alt="Settings" class="w-6 h-6">
+            </button>
+         </div>
+         <div>
+            <button @click="goToAccount" class="flex items-center justify-center">
+               <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+               </svg>
+            </button>
+         </div>
       </div>
       <div class="flex flex-row self-end">
          <p class="mr-4 ">Status:</p>
@@ -368,6 +377,11 @@
             }
          };
 
+         // Account link
+         const goToAccount = () => {
+            router.push('/account');
+         };
+
          // Functions to be run once page loads
          fetchCurrentUser(); // Fetches the currently signed-in user
          verifyUserRank(); // Only shows the settings icon if user is an admin or dev
@@ -375,7 +389,7 @@
          updateTimeAndGreeting(); // Get current time and appropriate greeting
          setInterval(updateTimeAndGreeting, 60000); // Update time and greeting every minute
 
-         return { currentTime, greeting, username, lastLoginDisplay, userIsAdmin, initializeTimeIn, logout, goToSettings };
+         return { currentTime, greeting, username, lastLoginDisplay, userIsAdmin, initializeTimeIn, logout, goToSettings, goToAccount };
       }
    };
 

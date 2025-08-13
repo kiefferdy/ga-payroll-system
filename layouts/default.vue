@@ -1,6 +1,6 @@
 <template>
-   <!-- Check if this is an admin page that needs full-screen layout -->
-   <div v-if="isAdminPage" class="min-h-screen">
+   <!-- Check if this page needs full-screen layout -->
+   <div v-if="isFullScreenPage" class="min-h-screen">
       <NuxtPage/>
    </div>
    
@@ -17,10 +17,10 @@
 <script setup>
 const route = useRoute()
 
-// Determine if this is an admin page that should use full-screen layout
-const isAdminPage = computed(() => {
-   const adminPages = ['/employees', '/settings', '/records']
-   return adminPages.includes(route.path)
+// Determine if this page should use full-screen layout (admin pages + account settings)
+const isFullScreenPage = computed(() => {
+   const fullScreenPages = ['/employees', '/settings', '/records', '/account']
+   return fullScreenPages.includes(route.path)
 })
 </script>
 
