@@ -240,7 +240,7 @@
                   <div class="flex items-center justify-between p-4 bg-off_white rounded-lg">
                      <div>
                         <h3 class="font-medium text-dark_gray">Enable Two-Factor Authentication</h3>
-                        <p class="text-sm text-dark_gray/70">Add an extra layer of security to your account</p>
+                        <p class="text-sm text-dark_gray/70">When enabled, employees that clock-in must enter an OTP sent to the configured device</p>
                      </div>
                      <input v-model="otpEnable" id="otp-toggle" type="checkbox" class="toggle toggle-primary">
                   </div>
