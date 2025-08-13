@@ -18,7 +18,23 @@
       </div>
       <div class="mt-5">
          <label class="label-text text-black mt-4 font-bold">Password<br></label>
-         <input v-model="password" type="password" class="input input-sm border-dark_green bg-primary_white rounded w-full" required>
+         <input v-model="password" @input="validatePasswordOnChange" type="password" class="input input-sm border-dark_green bg-primary_white rounded w-full" required>
+         <!-- Password strength indicator -->
+         <div v-if="password" class="mt-2">
+            <div class="text-xs mb-1">Password Strength: 
+               <span :class="passwordStrengthClass">{{ passwordStrength }}</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-1">
+               <div :class="passwordProgressClass" :style="{ width: passwordProgressWidth }" class="h-1 rounded-full transition-all duration-300"></div>
+            </div>
+         </div>
+         <!-- Password requirements -->
+         <div v-if="password && passwordErrors.length > 0" class="mt-2">
+            <p class="text-xs text-gray-600 mb-1">Password must include:</p>
+            <ul class="text-xs">
+               <li v-for="error in passwordErrors" :key="error" class="text-red-500">• {{ error }}</li>
+            </ul>
+         </div>
       </div>
       <div class="mt-5">
          <label class="label-text text-black mt-4 font-bold">Confirm Password<br></label>
@@ -37,7 +53,7 @@
       <div v-if="editSuccess" class="mt-2 self-center success">Success!</div>
       <div v-if="invalidEmail" class="mt-2 self-center error">Please enter a valid email address.</div>
       <div v-if="passwordsNotMatch" class="mt-2 self-center error">The passwords do not match.</div>
-      <div v-if="passwordTooShort" class="mt-2 self-center error">The password should be at least 6 characters long.</div>
+      <div v-if="passwordComplexityError" class="mt-2 self-center error">Password does not meet complexity requirements.</div>
       <div v-if="incompleteFields" class="mt-2 self-center error">Please fill all required fields before proceeding.</div>
       <div v-if="emailTaken" class="mt-2 self-center error">The entered email address is already taken.</div>
       <div v-if="insertionError" class="mt-2 self-center error">A database error occurred! Please try again.</div>
@@ -57,9 +73,14 @@
  
 <script setup>
 
-   import { ref } from 'vue';
+   import { ref, computed } from 'vue';
    import { useRouter } from 'vue-router';
    import { useRoute } from 'vue-router';
+   import { 
+      validatePasswordComplexity, 
+      sanitizeInput,
+      logSecurityEvent
+   } from '~/utils/security';
 
    const supabase = useSupabaseClient();
    const router = useRouter();
@@ -70,11 +91,43 @@
    const editSuccess = ref(false);
    const invalidEmail = ref(false);
    const passwordsNotMatch = ref(false);
-   const passwordTooShort = ref(false);
+   const passwordComplexityError = ref(false);
    const incompleteFields = ref(false);
    const emailTaken = ref(false);
    const insertionError = ref(false);
    const genericError = ref(false);
+
+   // Password validation
+   const passwordErrors = ref([]);
+   const passwordStrength = ref('');
+
+   // Password strength styling
+   const passwordStrengthClass = computed(() => {
+      switch (passwordStrength.value) {
+         case 'WEAK': return 'text-red-500';
+         case 'MEDIUM': return 'text-yellow-500';
+         case 'STRONG': return 'text-green-500';
+         default: return 'text-gray-500';
+      }
+   });
+
+   const passwordProgressClass = computed(() => {
+      switch (passwordStrength.value) {
+         case 'WEAK': return 'bg-red-500';
+         case 'MEDIUM': return 'bg-yellow-500';
+         case 'STRONG': return 'bg-green-500';
+         default: return 'bg-gray-300';
+      }
+   });
+
+   const passwordProgressWidth = computed(() => {
+      switch (passwordStrength.value) {
+         case 'WEAK': return '33%';
+         case 'MEDIUM': return '66%';
+         case 'STRONG': return '100%';
+         default: return '0%';
+      }
+   });
 
    const fetchUserEmail = async (uuid) => {
       const { data: { user } } = await supabase.auth.getUser();  // Get the user performing the action
@@ -98,26 +151,51 @@
       return result.body.data.user ? result.body.data.user.email : null;
    };
 
+   // Validate password as user types
+   async function validatePasswordOnChange() {
+      if (password.value) {
+         const validation = await validatePasswordComplexity(password.value);
+         passwordErrors.value = validation.errors;
+         passwordStrength.value = validation.strength;
+      } else {
+         passwordErrors.value = [];
+         passwordStrength.value = '';
+      }
+   }
+
    const handleEdit = async () => {
       // Verification of user input
       clearNotifs();
-      validateInputs();
-      if (invalidEmail.value || passwordsNotMatch.value || incompleteFields.value) {
+      await validateInputs();
+      if (invalidEmail.value || passwordsNotMatch.value || passwordComplexityError.value || incompleteFields.value) {
          return;
       }
 
       try {
          const { data: { user } } = await supabase.auth.getUser();  // Get the user performing the action
-         console.log("Retrieved user:", user);
+         
+         if (!user) {
+            genericError.value = true;
+            return;
+         }
 
-         // Sending create user request to server
+         // Page already protected by auth middleware with USERS_UPDATE permission
+
+         loadingNotif.value = true;
+
+         // Sanitize inputs
+         const cleanEmail = sanitizeInput(email.value.toLowerCase(), 255);
+         const cleanFirstName = sanitizeInput(firstName.value, 100);
+         const cleanLastName = sanitizeInput(lastName.value, 100);
+
+         // Sending edit user request to server
          const response = await fetch('/api/edit-user', {
             method: 'POST',
             headers: {
                'Content-Type': 'application/json'
             },
             body: JSON.stringify({ 
-               email: email.value,
+               email: cleanEmail,
                password: password.value,
                targetId: employee.id,
                userId: user.id
@@ -128,11 +206,21 @@
          if (!(result.status >= 200 && result.status <= 299)) {
             if (result.body.error?.message.includes('duplicate key value')) {
                emailTaken.value = true;
-               console.error(result.body.error.message);
-               return;
-            } else if (result.body.error?.message.includes('at least 6 characters')) {
-               passwordTooShort.value = true;
-               console.error(result.body.error.message);
+               
+               // Log account edit attempt with duplicate email
+               await logSecurityEvent({
+                  eventType: 'ACCOUNT_EDIT_FAILED',
+                  userId: user.id,
+                  userEmail: user.email,
+                  details: { 
+                     reason: 'Duplicate email',
+                     attemptedEmail: cleanEmail,
+                     targetUserId: targetId,
+                     performedBy: user.email
+                  },
+                  severity: 'MEDIUM'
+               });
+               
                return;
             } else {
                genericError.value = true;
@@ -141,33 +229,55 @@
             }
          }
 
-         // Assuming the target user's account has been edited
-         console.log(result);
-         loadingNotif.value = true;
-         const userId = targetId;
-         console.log('User edited:', userId);
+         const editedUserId = targetId;
          clearNotifs();
 
-         // Insert a new row in the Employees table for the new user
-         const { data: insertData, insertError } = await supabase
+         // Update the Employee record with sanitized data
+         const { error: updateError } = await supabase
             .from('Employees')
-            .update([
-               {
-                  first_name: firstName.value,
-                  last_name: lastName.value,
-                  requires_otp: needsOTP.value,
-                  last_updated: new Date()
-               }
-            ])
-            .eq('id', userId);
+            .update({ 
+               first_name: cleanFirstName,
+               last_name: cleanLastName,
+               requires_otp: needsOTP.value,
+               last_updated: new Date()
+            })
+            .eq('id', editedUserId);
 
-            if (insertError) {
-               // If inserting user to "Employees" table fails
-               loadingNotif.value = false;
-               insertionError.value = true;
-               console.error('Error inserting into Employees table:', insertError);
-               return;
-            }
+         if (updateError) {
+            loadingNotif.value = false;
+            insertionError.value = true;
+            console.error('Error updating Employee record:', updateError);
+            
+            // Log database update error
+            await logSecurityEvent({
+               eventType: 'DATABASE_ERROR',
+               userId: user.id,
+               userEmail: user.email,
+               details: { 
+                  operation: 'Employee record update',
+                  error: updateError.message,
+                  targetUserId: editedUserId
+               },
+               severity: 'HIGH'
+            });
+            
+            return;
+         }
+
+         // Log successful account edit
+         await logSecurityEvent({
+            eventType: 'ACCOUNT_EDITED',
+            userId: user.id,
+            userEmail: user.email,
+            details: { 
+               targetUserId: editedUserId,
+               targetUserEmail: cleanEmail,
+               targetUserName: `${cleanFirstName} ${cleanLastName}`,
+               requiresOTP: needsOTP.value,
+               editedBy: user.email
+            },
+            severity: 'LOW'
+         });
 
          loadingNotif.value = false;
          editSuccess.value = true;
@@ -177,13 +287,70 @@
          console.error(err);
          loadingNotif.value = false;
          genericError.value = true;
+         
+         // Log unexpected error
+         const { data: { user } } = await supabase.auth.getUser();
+         await logSecurityEvent({
+            eventType: 'ACCOUNT_EDIT_ERROR',
+            userId: user?.id,
+            userEmail: user?.email,
+            details: { 
+               error: err instanceof Error ? err.message : 'Unknown error',
+               targetUserId: targetId
+            },
+            severity: 'HIGH'
+         });
       }
    };
 
-   function validateInputs() {
+   async function validateInputs() {
+      // Validate email
       invalidEmail.value = !validateEmail(email.value);
+      
+      // Validate password match
       passwordsNotMatch.value = password.value !== verifyPassword.value;
+      
+      // Validate password complexity
+      const passwordValidation = await validatePasswordComplexity(password.value);
+      passwordComplexityError.value = !passwordValidation.valid;
+      
+      // Check for incomplete fields
       incompleteFields.value = !firstName.value || !lastName.value || !email.value;
+
+      // Log validation failures for security monitoring
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (invalidEmail.value) {
+         await logSecurityEvent({
+            eventType: 'INPUT_VALIDATION_FAILED',
+            userId: user?.id,
+            userEmail: user?.email,
+            details: { 
+               field: 'email', 
+               validationType: 'format', 
+               value: email.value.substring(0, 30),
+               targetUserId: targetId,
+               operation: 'admin_edit_account'
+            },
+            severity: 'LOW'
+         });
+      }
+      
+      if (passwordComplexityError.value) {
+         await logSecurityEvent({
+            eventType: 'INPUT_VALIDATION_FAILED',
+            userId: user?.id,
+            userEmail: user?.email,
+            details: { 
+               field: 'password', 
+               validationType: 'complexity', 
+               errors: passwordValidation.errors,
+               targetUserId: targetId,
+               operation: 'admin_edit_account'
+            },
+            severity: 'MEDIUM'
+         });
+      }
    }
 
    function validateEmail(email) {
@@ -195,7 +362,7 @@
    function clearNotifs() {
       invalidEmail.value = false;
       passwordsNotMatch.value = false;
-      passwordTooShort.value = false;
+      passwordComplexityError.value = false;
       incompleteFields.value = false;
       emailTaken.value = false;
       genericError.value = false;
