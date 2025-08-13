@@ -1,8 +1,11 @@
 import { defineEventHandler } from 'h3';
-import { getServiceRoleClient } from '../utils/supabase-clients';
+import { requireAuth, getServiceRoleClient } from '../utils/supabase-clients';
 
 export default defineEventHandler(async (event) => {
     try {
+        // Require authentication to access system configuration
+        await requireAuth(event);
+        
         // Fetch password policy settings from Settings table using service role client
         const supabase = getServiceRoleClient(event);
         const { data: settings, error } = await supabase

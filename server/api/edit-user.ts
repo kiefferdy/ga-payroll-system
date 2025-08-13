@@ -1,5 +1,6 @@
 import { defineEventHandler } from 'h3';
-import { requireAdmin, getServiceRoleClient } from '../utils/supabase-clients';
+import { requirePermission, getServiceRoleClient } from '../utils/supabase-clients';
+import { PERMISSIONS } from '~/utils/permissions';
 
 async function editUser(email: string, password: string, userId: string, event: any) {
     try {
@@ -31,8 +32,8 @@ export default defineEventHandler(async (event) => {
         const body = await readBody(event);
         const { email, password, targetId } = body; // targetId is the UUID of the to-be-edited user
 
-        // Enforce admin authentication using RLS
-        await requireAdmin(event);
+        // Require users.update permission to edit user accounts
+        await requirePermission(event, PERMISSIONS.USERS_UPDATE);
 
         if (!email || !targetId) {
             return { status: 400, body: 'Missing email or target user ID' };

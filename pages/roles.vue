@@ -12,10 +12,10 @@
             <span>Back to Dashboard</span>
           </NuxtLink>
           <nav class="flex space-x-6">
-            <NuxtLink to="/employees" class="px-3 py-2 hover:bg-button_green transition-colors rounded-lg">Employees</NuxtLink>
-            <NuxtLink to="/records" class="px-3 py-2 hover:bg-button_green transition-colors rounded-lg">Records</NuxtLink>
-            <NuxtLink to="/roles" class="px-3 py-2 bg-primary_white text-dark_green rounded-lg font-semibold">Roles</NuxtLink>
-            <NuxtLink to="/settings" class="px-3 py-2 hover:bg-button_green transition-colors rounded-lg">Settings</NuxtLink>
+            <NuxtLink v-if="canAccessEmployees" to="/employees" class="px-3 py-2 hover:bg-button_green transition-colors rounded-lg">Employees</NuxtLink>
+            <NuxtLink v-if="canAccessRecords" to="/records" class="px-3 py-2 hover:bg-button_green transition-colors rounded-lg">Records</NuxtLink>
+            <NuxtLink v-if="canAccessRoles" to="/roles" class="px-3 py-2 bg-primary_white text-dark_green rounded-lg font-semibold">Roles</NuxtLink>
+            <NuxtLink v-if="canAccessSettings" to="/settings" class="px-3 py-2 hover:bg-button_green transition-colors rounded-lg">Settings</NuxtLink>
           </nav>
         </div>
         <button @click="logout" class="flex items-center space-x-2 hover:bg-button_green px-3 py-2 rounded-lg transition-colors">
@@ -457,6 +457,9 @@ interface UserWithRoles {
 // Reactive data  
 const supabase = useSupabaseClient<any>()
 
+// Permission management
+const { canAccessEmployees, canAccessSettings, canAccessRoles, canAccessRecords, loadPermissions: loadUserPermissions } = usePermissions()
+
 const loading = ref(false)
 const saving = ref(false)
 const savingPermissions = ref(false)
@@ -583,7 +586,7 @@ async function loadRolePermissionAssignments() {
 
 async function loadUsersWithRoles() {
   try {
-    const data = await $fetch('/api/users-with-roles')
+    const data = await $fetch('/api/users-with-roles') as UserWithRoles[]
     usersWithRoles.value = data || []
   } catch (error) {
     console.error('Error loading users with roles:', error)
@@ -786,17 +789,16 @@ async function saveUserRoles() {
         userId: managingUserRoles.value.id,
         roleIds: userRoleAssignments_temp.value
       }
-    })
+    }) as { success: boolean }
 
     if (response.success) {
       cancelUserRoleManagement()
       await refreshData()
-    } else {
-      alert('Error saving user roles: ' + (response.error || 'Unknown error'))
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error saving user roles:', error)
-    alert('Error saving user roles. Please try again.')
+    const errorMessage = error?.data?.statusMessage || error?.message || 'Unknown error'
+    alert('Error saving user roles: ' + errorMessage)
   } finally {
     saving.value = false
   }
@@ -822,5 +824,6 @@ const logout = async () => {
 // Initialize data when component mounts
 onMounted(async () => {
   await refreshData()
+  await loadUserPermissions()
 })
 </script>

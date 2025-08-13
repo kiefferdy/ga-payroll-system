@@ -98,28 +98,6 @@ export async function requireAuth(event: H3Event<EventHandlerRequest>) {
   }
 }
 
-/**
- * Middleware to enforce admin role on API endpoints
- * @deprecated Use requirePermission() for granular access control
- */
-export async function requireAdmin(event: H3Event<EventHandlerRequest>) {
-  const user = await requireAuth(event)
-  
-  // Get authenticated client that respects RLS policies
-  const supabase = await serverSupabaseClient(event)
-  
-  // Check using permission system
-  const hasAdminAccess = await isUserAdmin(supabase, user.id)
-  
-  if (!hasAdminAccess) {
-    throw createError({
-      statusCode: 403,
-      statusMessage: 'Admin access required'
-    })
-  }
-  
-  return { user }
-}
 
 /**
  * Middleware to enforce specific permission on API endpoints

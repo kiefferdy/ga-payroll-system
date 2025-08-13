@@ -43,7 +43,6 @@
 
    import { ref } from 'vue';
    import { useRouter } from 'vue-router';
-   import { checkUserAuthorization } from '~/utils/security';
 
    export default {
       setup() {
@@ -256,29 +255,24 @@
             }
          };
 
-         // True if user is an admin or developer
+         // True if user has settings access permission
          const userIsAdmin = ref(false);
 
-         // Verification check to see if user is an admin or developer before showing settings icon
-         const verifyUserRank = async () => {
-            const { data: { user } } = await supabase.auth.getUser();  // Get the current user
-
-            if (user) {
-               try {
-                  // Check if user has admin permissions using the new permission system
-                  const authCheck = await checkUserAuthorization(user.id, ['Admin', 'Developer']);
-                  if (authCheck.authorized) {
-                     userIsAdmin.value = true;
-                  }
-               } catch (error) {
-                  console.log("Error checking user authorization:", error);
-               }
-            } else {
-               console.log("User is not logged in.");
+         // Check if user has settings access using permission system
+         const checkSettingsAccess = async () => {
+            try {
+               const hasAccess = await $fetch('/api/check-user-permission', {
+                  method: 'POST',
+                  body: { permission: 'settings.read' }
+               })
+               userIsAdmin.value = hasAccess
+            } catch (error) {
+               console.log("Error checking settings permission:", error);
+               userIsAdmin.value = false;
             }
          }
 
-         verifyUserRank();
+         checkSettingsAccess();
 
          // Settings link
          const goToSettings = async () => {
@@ -296,7 +290,7 @@
 
          // Functions to be run once the page loads
          fetchCurrentUser(); // Fetches the currently signed-in user
-         verifyUserRank(); // Only shows the settings icon if user is an admin or dev
+         checkSettingsAccess(); // Check if user has permission to access settings
          checkTimeInStatus(); // Redirect user to time-in page if user is currently timed-out
          updateTimeAndGreeting(); // Get current time and appropriate greeting
          setInterval(updateTimeAndGreeting, 60000); // Update time and greeting every minute

@@ -50,8 +50,8 @@ export default defineEventHandler(async (event) => {
       // Find primary role (prioritize system roles, then first role alphabetically)
       let primaryRole = 'Employee'
       if (userRoleAssignments.length > 0) {
-        const systemRole = userRoleAssignments.find((ur: any) => ur.Roles.is_system_role)
-        primaryRole = systemRole ? systemRole.Roles.name : userRoleAssignments[0].Roles.name
+        const systemRole = userRoleAssignments.find((ur: any) => (ur.Roles as any).is_system_role)
+        primaryRole = systemRole ? (systemRole.Roles as any).name : (userRoleAssignments[0].Roles as any).name
       }
       
       return {

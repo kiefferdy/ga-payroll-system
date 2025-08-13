@@ -1,5 +1,6 @@
 import { defineEventHandler } from 'h3';
-import { requireAdmin, getServiceRoleClient } from '../utils/supabase-clients';
+import { requirePermission, getServiceRoleClient } from '../utils/supabase-clients';
+import { PERMISSIONS } from '~/utils/permissions';
 
 async function getUser(id: string, event: any) {
     try {
@@ -14,10 +15,10 @@ async function getUser(id: string, event: any) {
             };
         }
         
-        // Get employee data (includes rank, name, etc.)
+        // Get employee data (includes name, etc.)
         const { data: employeeData, error: empError } = await (supabase as any)
             .from('Employees')
-            .select('first_name, last_name, rank')
+            .select('first_name, last_name')
             .eq('id', id)
             .single();
         
@@ -29,8 +30,7 @@ async function getUser(id: string, event: any) {
                     email: authUser.user.email,
                     user_metadata: {
                         first_name: employeeData?.first_name || '',
-                        last_name: employeeData?.last_name || '',
-                        rank: employeeData?.rank || 'Employee'
+                        last_name: employeeData?.last_name || ''
                     }
                 }
             }, 
@@ -50,8 +50,8 @@ export default defineEventHandler(async (event) => {
         const body = await readBody(event);
         const { targetId } = body;
 
-        // Enforce admin authentication using RLS
-        await requireAdmin(event);
+        // Require users.read permission to access user data
+        await requirePermission(event, PERMISSIONS.USERS_READ);
 
         if (!targetId) {
             return { status: 400, body: 'Missing UUID of user to be retrieved' };

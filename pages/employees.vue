@@ -12,10 +12,10 @@
                   <span>Back to Dashboard</span>
                </NuxtLink>
                <nav class="flex space-x-6">
-                  <NuxtLink to="/employees" class="px-3 py-2 bg-primary_white text-dark_green rounded-lg font-semibold">Employees</NuxtLink>
-                  <NuxtLink to="/records" class="px-3 py-2 hover:bg-button_green transition-colors rounded-lg">Records</NuxtLink>
-                  <NuxtLink to="/roles" class="px-3 py-2 hover:bg-button_green transition-colors rounded-lg">Roles</NuxtLink>
-                  <NuxtLink to="/settings" class="px-3 py-2 hover:bg-button_green transition-colors rounded-lg">Settings</NuxtLink>
+                  <NuxtLink v-if="canAccessEmployees" to="/employees" class="px-3 py-2 bg-primary_white text-dark_green rounded-lg font-semibold">Employees</NuxtLink>
+                  <NuxtLink v-if="canAccessRecords" to="/records" class="px-3 py-2 hover:bg-button_green transition-colors rounded-lg">Records</NuxtLink>
+                  <NuxtLink v-if="canAccessRoles" to="/roles" class="px-3 py-2 hover:bg-button_green transition-colors rounded-lg">Roles</NuxtLink>
+                  <NuxtLink v-if="canAccessSettings" to="/settings" class="px-3 py-2 hover:bg-button_green transition-colors rounded-lg">Settings</NuxtLink>
                </nav>
             </div>
             <button @click="logout" class="flex items-center space-x-2 hover:bg-button_green px-3 py-2 rounded-lg transition-colors">
@@ -110,7 +110,7 @@
                      <option value="locked">Locked</option>
                   </select>
                </div>
-               <NuxtLink to="/create-account">
+               <NuxtLink v-if="canCreateUsers" to="/create-account">
                   <button class="btn bg-dark_green hover:bg-button_green text-white border-none">
                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
@@ -142,10 +142,19 @@
 <script setup>
 
    import { useRouter } from 'vue-router';
-   import { checkUserAuthorization } from '~/utils/security';
 
    const supabase = useSupabaseClient();
    const router = useRouter();
+   
+   // Permission management
+   const { canAccessEmployees, canAccessSettings, canAccessRoles, canAccessRecords, loadPermissions, hasPermission } = usePermissions();
+   
+   // Additional permission checks
+   const canCreateUsers = ref(false);
+   
+   const checkCreatePermission = async () => {
+      canCreateUsers.value = await hasPermission('users.create');
+   };
 
    // Refs for template
    const Employees = ref([]);
@@ -246,24 +255,13 @@
       // This will trigger the computed property to recalculate
    };
 
-   // Verification check to see if user is an admin or developer before showing settings icon
-   const verifyUserRank = async () => {
-      const { data: { user } } = await supabase.auth.getUser();  // Get the current user
-
-      if (user) {
-         try {
-            // Check if user has admin permissions using the new permission system
-            const authCheck = await checkUserAuthorization(user.id, ['Admin', 'Developer']);
-            if (!authCheck.authorized) {
-               console.error('Unauthorized access attempt to employees page');
-               router.push('/');
-            }
-         } catch (error) {
-            console.log("Error checking user authorization:", error);
-            router.push('/');
-         }
-      } else {
-         console.log("User is not logged in.");
+   // Basic user verification - page access is controlled by middleware with users.read permission
+   const verifyUserAccess = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+         console.log("No user found, redirecting to login");
+         router.push('/login');
       }
    }
 
@@ -278,7 +276,9 @@
    };
 
    // Functions to be run once page loads
-   verifyUserRank();
+   verifyUserAccess();
    fetchEmployees();
+   loadPermissions();
+   checkCreatePermission();
 
 </script>

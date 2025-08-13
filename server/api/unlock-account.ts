@@ -1,5 +1,6 @@
 import { defineEventHandler } from 'h3';
-import { requireAdmin, getAuthenticatedClient, getServiceRoleClient } from '../utils/supabase-clients';
+import { requirePermission, getAuthenticatedClient, getServiceRoleClient } from '../utils/supabase-clients';
+import { PERMISSIONS } from '~/utils/permissions';
 
 export default defineEventHandler(async (event) => {
     const body = await readBody(event);
@@ -10,8 +11,8 @@ export default defineEventHandler(async (event) => {
             return { success: false, error: 'Target email is required' };
         }
 
-        // Enforce admin authentication using RLS
-        await requireAdmin(event);
+        // Require users.unlock permission to unlock accounts
+        await requirePermission(event, PERMISSIONS.USERS_UNLOCK);
 
         // Get service role client only for auth.users lookup (necessary since auth.users doesn't respect RLS)
         const serviceRoleSupabase = getServiceRoleClient(event);

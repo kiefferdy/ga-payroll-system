@@ -25,21 +25,25 @@
           </NuxtLink>
           <nav class="flex space-x-6">
             <NuxtLink
+              v-if="canAccessEmployees"
               to="/employees"
               class="rounded-lg px-3 py-2 transition-colors hover:bg-button_green"
               >Employees</NuxtLink
             >
             <NuxtLink
+              v-if="canAccessRecords"
               to="/records"
               class="rounded-lg bg-primary_white px-3 py-2 font-semibold text-dark_green"
               >Records</NuxtLink
             >
             <NuxtLink
+              v-if="canAccessRoles"
               to="/roles"
               class="rounded-lg px-3 py-2 transition-colors hover:bg-button_green"
               >Roles</NuxtLink
             >
             <NuxtLink
+              v-if="canAccessSettings"
               to="/settings"
               class="rounded-lg px-3 py-2 transition-colors hover:bg-button_green"
               >Settings</NuxtLink
@@ -241,6 +245,20 @@ withDefaults(
 
 const supabase = useSupabaseClient();
 const router = useRouter();
+
+// Permission checks for navigation
+const { 
+  canAccessEmployees, 
+  canAccessRecords, 
+  canAccessRoles, 
+  canAccessSettings,
+  loadPermissions
+} = usePermissions();
+
+// Load permissions on component mount
+onMounted(() => {
+  loadPermissions();
+});
 
 // Utility function to format currency
 const formatCurrency = (amount: number): string => {

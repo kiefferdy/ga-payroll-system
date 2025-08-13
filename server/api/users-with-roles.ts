@@ -44,7 +44,19 @@ export default defineEventHandler(async (event) => {
           is_system_role
         )
       `)
-      .eq('is_active', true)
+      .eq('is_active', true) as {
+        data: Array<{
+          user_id: string
+          role_id: number
+          Roles: {
+            id: number
+            name: string
+            description: string
+            is_system_role: boolean
+          }
+        }> | null
+        error: any
+      }
 
     if (rolesError) {
       throw createError({

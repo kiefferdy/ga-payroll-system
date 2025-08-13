@@ -38,6 +38,7 @@ export async function logSecurityEvent(event: SecurityEvent) {
 
 /**
  * Centralized authorization check - replaces duplicate authenticateUser functions
+ * @deprecated Use hasPermission() with specific permissions instead of role-based checks
  * This function should be used from client-side components
  */
 export async function checkUserAuthorization(

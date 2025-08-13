@@ -1,5 +1,6 @@
 import { defineEventHandler } from 'h3';
-import { requireAdmin, getServiceRoleClient } from '../utils/supabase-clients';
+import { requirePermission, getServiceRoleClient } from '../utils/supabase-clients';
+import { PERMISSIONS } from '~/utils/permissions';
 
 export default defineEventHandler(async (event) => {
     try {
@@ -10,8 +11,8 @@ export default defineEventHandler(async (event) => {
             return { success: false, error: 'User ID is required' };
         }
 
-        // Enforce admin authentication
-        await requireAdmin(event);
+        // Require users.read permission to access user email
+        await requirePermission(event, PERMISSIONS.USERS_READ);
 
         // Get service role client to query auth.users
         const supabase = getServiceRoleClient(event);

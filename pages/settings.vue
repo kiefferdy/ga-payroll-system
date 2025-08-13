@@ -12,10 +12,10 @@
                   <span>Back to Dashboard</span>
                </NuxtLink>
                <nav class="flex space-x-6">
-                  <NuxtLink to="/employees" class="px-3 py-2 hover:bg-button_green transition-colors rounded-lg">Employees</NuxtLink>
-                  <NuxtLink to="/records" class="px-3 py-2 hover:bg-button_green transition-colors rounded-lg">Records</NuxtLink>
-                  <NuxtLink to="/roles" class="px-3 py-2 hover:bg-button_green transition-colors rounded-lg">Roles</NuxtLink>
-                  <NuxtLink to="/settings" class="px-3 py-2 bg-primary_white text-dark_green rounded-lg font-semibold">Settings</NuxtLink>
+                  <NuxtLink v-if="canAccessEmployees" to="/employees" class="px-3 py-2 hover:bg-button_green transition-colors rounded-lg">Employees</NuxtLink>
+                  <NuxtLink v-if="canAccessRecords" to="/records" class="px-3 py-2 hover:bg-button_green transition-colors rounded-lg">Records</NuxtLink>
+                  <NuxtLink v-if="canAccessRoles" to="/roles" class="px-3 py-2 hover:bg-button_green transition-colors rounded-lg">Roles</NuxtLink>
+                  <NuxtLink v-if="canAccessSettings" to="/settings" class="px-3 py-2 bg-primary_white text-dark_green rounded-lg font-semibold">Settings</NuxtLink>
                </nav>
             </div>
             <button @click="logout" class="flex items-center space-x-2 hover:bg-button_green px-3 py-2 rounded-lg transition-colors">
@@ -309,6 +309,9 @@
 
    const supabase = useSupabaseClient();
    const router = useRouter();
+   
+   // Permission management
+   const { canAccessEmployees, canAccessSettings, canAccessRoles, canAccessRecords, loadPermissions } = usePermissions();
 
    // Re-authentication modal state
    const showReAuthModal = ref(false);
@@ -571,5 +574,6 @@
 
    // Functions to be run once page loads
    fetchSettings();
+   loadPermissions();
 
 </script>
