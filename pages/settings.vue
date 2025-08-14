@@ -12,6 +12,14 @@
             <p class="text-dark_gray/70">Manage system configurations and security settings</p>
          </div>
 
+         <!-- Read-Only Access Notice -->
+         <div v-if="!canUpdateSettings" class="alert alert-info mb-6">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span>You have read-only access to system settings. Contact an administrator to make changes.</span>
+         </div>
+
          <!-- Settings Grid -->
          <div class="space-y-8">
             <!-- Password Policy Section -->
@@ -37,7 +45,11 @@
                         type="number" 
                         min="4" 
                         max="128" 
-                        class="w-full input input-bordered bg-primary_white border-search_stroke_gray focus:border-dark_green"
+                        :readonly="!canUpdateSettings"
+                        :class="[
+                           'w-full input input-bordered bg-primary_white border-search_stroke_gray focus:border-dark_green',
+                           { 'opacity-50 cursor-not-allowed bg-gray-50': !canUpdateSettings }
+                        ]"
                      >
                   </div>
 
@@ -49,7 +61,11 @@
                         type="number" 
                         min="0" 
                         max="20" 
-                        class="w-full input input-bordered bg-primary_white border-search_stroke_gray focus:border-dark_green"
+                        :readonly="!canUpdateSettings"
+                        :class="[
+                           'w-full input input-bordered bg-primary_white border-search_stroke_gray focus:border-dark_green',
+                           { 'opacity-50 cursor-not-allowed bg-gray-50': !canUpdateSettings }
+                        ]"
                      >
                   </div>
 
@@ -61,7 +77,11 @@
                         type="number" 
                         min="0" 
                         max="168" 
-                        class="w-full input input-bordered bg-primary_white border-search_stroke_gray focus:border-dark_green"
+                        :readonly="!canUpdateSettings"
+                        :class="[
+                           'w-full input input-bordered bg-primary_white border-search_stroke_gray focus:border-dark_green',
+                           { 'opacity-50 cursor-not-allowed bg-gray-50': !canUpdateSettings }
+                        ]"
                      >
                   </div>
 
@@ -73,7 +93,11 @@
                         type="number" 
                         min="0" 
                         max="365" 
-                        class="w-full input input-bordered bg-primary_white border-search_stroke_gray focus:border-dark_green"
+                        :readonly="!canUpdateSettings"
+                        :class="[
+                           'w-full input input-bordered bg-primary_white border-search_stroke_gray focus:border-dark_green',
+                           { 'opacity-50 cursor-not-allowed bg-gray-50': !canUpdateSettings }
+                        ]"
                      >
                   </div>
                </div>
@@ -84,25 +108,65 @@
                         <h3 class="font-medium text-dark_gray">Enable Password Complexity</h3>
                         <p class="text-sm text-dark_gray/70">Enforce password complexity requirements</p>
                      </div>
-                     <input v-model="enablePasswordComplexity" type="checkbox" class="toggle toggle-primary">
+                     <input 
+                        v-model="enablePasswordComplexity" 
+                        type="checkbox" 
+                        :disabled="!canUpdateSettings"
+                        :class="[
+                           'toggle toggle-primary',
+                           { 'opacity-50 cursor-not-allowed': !canUpdateSettings }
+                        ]"
+                     >
                   </div>
 
                   <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
                      <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                         <span class="text-sm text-dark_gray">Require Uppercase</span>
-                        <input v-model="passwordRequireUppercase" type="checkbox" class="checkbox checkbox-sm">
+                        <input 
+                           v-model="passwordRequireUppercase" 
+                           type="checkbox" 
+                           :disabled="!canUpdateSettings"
+                           :class="[
+                              'checkbox checkbox-sm',
+                              { 'opacity-50 cursor-not-allowed': !canUpdateSettings }
+                           ]"
+                        >
                      </div>
                      <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                         <span class="text-sm text-dark_gray">Require Lowercase</span>
-                        <input v-model="passwordRequireLowercase" type="checkbox" class="checkbox checkbox-sm">
+                        <input 
+                           v-model="passwordRequireLowercase" 
+                           type="checkbox" 
+                           :disabled="!canUpdateSettings"
+                           :class="[
+                              'checkbox checkbox-sm',
+                              { 'opacity-50 cursor-not-allowed': !canUpdateSettings }
+                           ]"
+                        >
                      </div>
                      <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                         <span class="text-sm text-dark_gray">Require Numbers</span>
-                        <input v-model="passwordRequireNumbers" type="checkbox" class="checkbox checkbox-sm">
+                        <input 
+                           v-model="passwordRequireNumbers" 
+                           type="checkbox" 
+                           :disabled="!canUpdateSettings"
+                           :class="[
+                              'checkbox checkbox-sm',
+                              { 'opacity-50 cursor-not-allowed': !canUpdateSettings }
+                           ]"
+                        >
                      </div>
                      <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                         <span class="text-sm text-dark_gray">Require Special Chars</span>
-                        <input v-model="passwordRequireSpecialChars" type="checkbox" class="checkbox checkbox-sm">
+                        <input 
+                           v-model="passwordRequireSpecialChars" 
+                           type="checkbox" 
+                           :disabled="!canUpdateSettings"
+                           :class="[
+                              'checkbox checkbox-sm',
+                              { 'opacity-50 cursor-not-allowed': !canUpdateSettings }
+                           ]"
+                        >
                      </div>
                   </div>
 
@@ -111,7 +175,15 @@
                         <h3 class="font-medium text-dark_gray">Force Password Change on First Login</h3>
                         <p class="text-sm text-dark_gray/70">Require new users to change their password when they first log in</p>
                      </div>
-                     <input v-model="forcePasswordChangeFirstLogin" type="checkbox" class="toggle toggle-primary">
+                     <input 
+                        v-model="forcePasswordChangeFirstLogin" 
+                        type="checkbox" 
+                        :disabled="!canUpdateSettings"
+                        :class="[
+                           'toggle toggle-primary',
+                           { 'opacity-50 cursor-not-allowed': !canUpdateSettings }
+                        ]"
+                     >
                   </div>
                </div>
             </div>
@@ -139,7 +211,11 @@
                         type="number" 
                         min="3" 
                         max="20" 
-                        class="w-full input input-bordered bg-primary_white border-search_stroke_gray focus:border-dark_green"
+                        :readonly="!canUpdateSettings"
+                        :class="[
+                           'w-full input input-bordered bg-primary_white border-search_stroke_gray focus:border-dark_green',
+                           { 'opacity-50 cursor-not-allowed bg-gray-50': !canUpdateSettings }
+                        ]"
                      >
                   </div>
 
@@ -151,7 +227,11 @@
                         type="number" 
                         min="5" 
                         max="1440" 
-                        class="w-full input input-bordered bg-primary_white border-search_stroke_gray focus:border-dark_green"
+                        :readonly="!canUpdateSettings"
+                        :class="[
+                           'w-full input input-bordered bg-primary_white border-search_stroke_gray focus:border-dark_green',
+                           { 'opacity-50 cursor-not-allowed bg-gray-50': !canUpdateSettings }
+                        ]"
                      >
                   </div>
                </div>
@@ -162,7 +242,15 @@
                         <h3 class="font-medium text-dark_gray">Auto-Unlock Accounts</h3>
                         <p class="text-sm text-dark_gray/70">Automatically unlock accounts after the lockout period expires</p>
                      </div>
-                     <input v-model="autoUnlockAccounts" type="checkbox" class="toggle toggle-primary">
+                     <input 
+                        v-model="autoUnlockAccounts" 
+                        type="checkbox" 
+                        :disabled="!canUpdateSettings"
+                        :class="[
+                           'toggle toggle-primary',
+                           { 'opacity-50 cursor-not-allowed': !canUpdateSettings }
+                        ]"
+                     >
                   </div>
                </div>
             </div>
@@ -189,7 +277,11 @@
                         id="otp-email" 
                         type="email" 
                         placeholder="Enter OTP email" 
-                        class="w-full input input-bordered bg-primary_white border-search_stroke_gray focus:border-dark_green"
+                        :readonly="!canUpdateSettings"
+                        :class="[
+                           'w-full input input-bordered bg-primary_white border-search_stroke_gray focus:border-dark_green',
+                           { 'opacity-50 cursor-not-allowed bg-gray-50': !canUpdateSettings }
+                        ]"
                      >
                   </div>
 
@@ -200,7 +292,11 @@
                         id="otp-phone" 
                         type="tel" 
                         placeholder="+1234567890" 
-                        class="w-full input input-bordered bg-primary_white border-search_stroke_gray focus:border-dark_green"
+                        :readonly="!canUpdateSettings"
+                        :class="[
+                           'w-full input input-bordered bg-primary_white border-search_stroke_gray focus:border-dark_green',
+                           { 'opacity-50 cursor-not-allowed bg-gray-50': !canUpdateSettings }
+                        ]"
                      >
                   </div>
 
@@ -209,7 +305,11 @@
                      <select 
                         v-model="otpChannel" 
                         id="otp-channel" 
-                        class="w-full select select-bordered bg-primary_white border-search_stroke_gray focus:border-dark_green"
+                        :disabled="!canUpdateSettings"
+                        :class="[
+                           'w-full select select-bordered bg-primary_white border-search_stroke_gray focus:border-dark_green',
+                           { 'opacity-50 cursor-not-allowed bg-gray-50': !canUpdateSettings }
+                        ]"
                      >
                         <option value="Email">Email</option>
                         <option value="SMS">SMS</option>
@@ -222,7 +322,16 @@
                         <h3 class="font-medium text-dark_gray">Enable Two-Factor Authentication</h3>
                         <p class="text-sm text-dark_gray/70">When enabled, employees that clock-in must enter an OTP sent to the configured device</p>
                      </div>
-                     <input v-model="otpEnable" id="otp-toggle" type="checkbox" class="toggle toggle-primary">
+                     <input 
+                        v-model="otpEnable" 
+                        id="otp-toggle" 
+                        type="checkbox" 
+                        :disabled="!canUpdateSettings"
+                        :class="[
+                           'toggle toggle-primary',
+                           { 'opacity-50 cursor-not-allowed': !canUpdateSettings }
+                        ]"
+                     >
                   </div>
                </div>
             </div>
@@ -252,7 +361,7 @@
                <span>Unable to update system settings!</span>
             </div>
 
-            <div class="text-center">
+            <div v-if="canUpdateSettings" class="text-center">
                <h3 class="text-lg font-semibold text-dark_gray mb-2">Save Configuration</h3>
                <p class="text-sm text-dark_gray/70 mb-4">Apply all changes to password policy, account lockout, and two-factor authentication settings.</p>
                
@@ -286,7 +395,9 @@
 
    const supabase = useSupabaseClient();
    
-   // Permission management not needed - handled by AdminNavbar
+   // Permission management
+   const { hasPermission } = usePermissions();
+   const canUpdateSettings = ref(false);
 
    // Re-authentication modal state
    const showReAuthModal = ref(false);
@@ -509,7 +620,13 @@
 
    // Page is already protected by auth.global.ts middleware with proper permissions
 
+   // Check user permissions
+   const checkUpdatePermission = async () => {
+      canUpdateSettings.value = await hasPermission('settings.update');
+   };
+
    // Functions to be run once page loads
    fetchSettings();
+   checkUpdatePermission();
 
 </script>

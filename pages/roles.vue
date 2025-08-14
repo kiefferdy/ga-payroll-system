@@ -9,12 +9,23 @@
       <div class="mb-8">
         <h1 class="text-3xl font-bold text-dark_gray mb-2">Roles & Permissions Management</h1>
         <p class="text-dark_gray/70">Manage user roles and their associated permissions</p>
+        
+        <!-- Read-only access notice -->
+        <div v-if="!canCreateRoles && !canUpdateRoles && !canDeleteRoles" class="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+          <div class="flex items-center">
+            <svg class="w-4 h-4 text-blue-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span class="text-blue-800 text-sm font-medium">You have read-only access to roles and permissions. Contact an administrator to make changes.</span>
+          </div>
+        </div>
       </div>
 
       <!-- Action Bar -->
       <div class="mb-6 flex justify-between items-center">
         <div class="flex space-x-4">
           <button 
+            v-if="canCreateRoles"
             @click="showCreateRoleModal = true"
             class="bg-dark_green text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2"
           >
@@ -107,6 +118,7 @@
               </div>
               <div class="flex space-x-2">
                 <button 
+                  v-if="canUpdateRoles"
                   @click="editRole(role)"
                   class="text-gray-400 hover:text-gray-600 p-1"
                   title="Edit Role"
@@ -116,7 +128,7 @@
                   </svg>
                 </button>
                 <button 
-                  v-if="!role.is_system_role"
+                  v-if="!role.is_system_role && canDeleteRoles"
                   @click="deleteRole(role)"
                   class="text-red-400 hover:text-red-600 p-1"
                   title="Delete Role"
@@ -212,7 +224,7 @@
                       @click="manageUserRoles(user)"
                       class="text-dark_green hover:text-green-700 text-sm font-medium"
                     >
-                      Manage Roles
+                      {{ canAssignRoles ? 'Manage Roles' : 'View Roles' }}
                     </button>
                   </td>
                 </tr>
@@ -302,8 +314,18 @@
       <div v-if="managingPermissionsFor" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div class="bg-white rounded-lg p-6 w-full max-w-4xl mx-4 max-h-[90vh] overflow-y-auto">
           <h3 class="text-lg font-semibold mb-4">
-            Manage Permissions for "{{ managingPermissionsFor.name }}"
+            {{ canUpdateRoles ? 'Manage' : 'View' }} Permissions for "{{ managingPermissionsFor.name }}"
           </h3>
+          
+          <!-- Read-only access notice -->
+          <div v-if="!canUpdateRoles" class="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <div class="flex items-center">
+              <svg class="w-4 h-4 text-blue-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span class="text-blue-800 text-sm font-medium">You have read-only access to role permissions. Contact an administrator to make changes.</span>
+            </div>
+          </div>
           
           <div class="space-y-4">
             <div 
@@ -317,12 +339,15 @@
                   v-for="permission in perms" 
                   :key="permission.id"
                   class="flex items-center space-x-3 p-2 rounded hover:bg-gray-50"
+                  :class="!canUpdateRoles ? 'cursor-default' : ''"
                 >
                   <input 
                     type="checkbox"
                     :checked="rolePermissions.includes(permission.id)"
                     @change="toggleRolePermission(permission.id)"
+                    :disabled="!canUpdateRoles"
                     class="h-4 w-4 text-dark_green focus:ring-dark_green border-gray-300 rounded"
+                    :class="!canUpdateRoles ? 'cursor-not-allowed opacity-50' : ''"
                   >
                   <div class="flex-1">
                     <div class="font-medium text-sm text-gray-900">{{ permission.action }}</div>
@@ -338,9 +363,10 @@
               @click="cancelPermissionManagement"
               class="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50"
             >
-              Cancel
+              {{ canUpdateRoles ? 'Cancel' : 'Close' }}
             </button>
             <button 
+              v-if="canUpdateRoles"
               @click="saveRolePermissions"
               class="px-4 py-2 bg-dark_green text-white rounded-md hover:bg-green-700"
               :disabled="savingPermissions"
@@ -355,9 +381,19 @@
       <div v-if="managingUserRoles" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div class="bg-white rounded-lg p-6 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
           <h3 class="text-lg font-semibold mb-4">
-            Manage Roles for {{ managingUserRoles.first_name }} {{ managingUserRoles.last_name }}
+            {{ canAssignRoles ? 'Manage' : 'View' }} Roles for {{ managingUserRoles.first_name }} {{ managingUserRoles.last_name }}
           </h3>
           <p class="text-sm text-gray-600 mb-6">{{ managingUserRoles.email }}</p>
+          
+          <!-- Read-only access notice -->
+          <div v-if="!canAssignRoles" class="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <div class="flex items-center">
+              <svg class="w-4 h-4 text-blue-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span class="text-blue-800 text-sm font-medium">You have read-only access to user role assignments. Contact an administrator to make changes.</span>
+            </div>
+          </div>
           
           <div class="space-y-4">
             <h4 class="font-medium text-gray-900">Available Roles</h4>
@@ -366,13 +402,18 @@
                 v-for="role in roles" 
                 :key="role.id"
                 class="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50 border"
-                :class="userRoleAssignments_temp.includes(role.id) ? 'border-green-200 bg-green-50' : 'border-gray-200'"
+                :class="[
+                  userRoleAssignments_temp.includes(role.id) ? 'border-green-200 bg-green-50' : 'border-gray-200',
+                  !canAssignRoles ? 'cursor-default' : ''
+                ]"
               >
                 <input 
                   type="checkbox"
                   :checked="userRoleAssignments_temp.includes(role.id)"
                   @change="toggleUserRole(role.id)"
+                  :disabled="!canAssignRoles"
                   class="h-4 w-4 text-dark_green focus:ring-dark_green border-gray-300 rounded"
+                  :class="!canAssignRoles ? 'cursor-not-allowed opacity-50' : ''"
                 >
                 <div class="flex-1">
                   <div class="font-medium text-sm text-gray-900">{{ role.name }}</div>
@@ -392,9 +433,10 @@
               @click="cancelUserRoleManagement"
               class="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50"
             >
-              Cancel
+              {{ canAssignRoles ? 'Cancel' : 'Close' }}
             </button>
             <button 
+              v-if="canAssignRoles"
               @click="saveUserRoles"
               class="px-4 py-2 bg-dark_green text-white rounded-md hover:bg-green-700"
               :disabled="saving"
@@ -436,7 +478,12 @@ interface UserWithRoles {
 // Reactive data  
 const supabase = useSupabaseClient<any>()
 
-// Permission management not needed - handled by AdminNavbar
+// Permission management
+const { hasPermission } = usePermissions();
+const canCreateRoles = ref(false);
+const canUpdateRoles = ref(false);
+const canDeleteRoles = ref(false);
+const canAssignRoles = ref(false);
 
 const loading = ref(false)
 const saving = ref(false)
@@ -787,8 +834,17 @@ async function saveUserRoles() {
   }
 }
 
+// Check role management permissions
+const checkRolePermissions = async () => {
+  canCreateRoles.value = await hasPermission('roles.create');
+  canUpdateRoles.value = await hasPermission('roles.update');
+  canDeleteRoles.value = await hasPermission('roles.delete');
+  canAssignRoles.value = await hasPermission('roles.assign');
+};
+
 // Initialize data when component mounts
 onMounted(async () => {
   await refreshData()
+  await checkRolePermissions()
 })
 </script>

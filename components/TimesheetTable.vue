@@ -9,6 +9,12 @@
           <p class="text-sm text-dark_gray/70">
             Track daily hours and calculate payments
           </p>
+          <div v-if="!canUpdateTimesheet" class="mt-2 text-xs text-orange-600 font-medium">
+            <svg class="w-3 h-3 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            Read-only access - Contact an administrator to make changes
+          </div>
         </div>
         <div v-if="weekData" class="text-sm text-dark_gray/70">
           {{ weekData.startDate }} to {{ weekData.endDate }}
@@ -96,63 +102,71 @@
               <td>
                 <input
                   :value="weekData.days[dayKey].hours"
-                  @input="updateField(dayKey, 'hours', $event)"
+                  @input="canUpdateTimesheet ? updateField(dayKey, 'hours', $event) : null"
                   type="number"
                   min="0"
                   max="24"
                   step="1"
+                  :readonly="!canUpdateTimesheet"
                   class="input input-xs w-16"
-                  :class="
+                  :class="[
                     dayKey.startsWith('adj')
                       ? 'bg-yellow-100 border-yellow-300'
-                      : 'border-search_stroke_gray bg-off_white'
-                  "
+                      : 'border-search_stroke_gray bg-off_white',
+                    { 'opacity-50 cursor-not-allowed': !canUpdateTimesheet }
+                  ]"
                 />
               </td>
               <td>
                 <input
                   :value="weekData.days[dayKey].minutes"
-                  @input="updateField(dayKey, 'minutes', $event)"
+                  @input="canUpdateTimesheet ? updateField(dayKey, 'minutes', $event) : null"
                   type="number"
                   min="0"
                   max="59"
                   step="1"
+                  :readonly="!canUpdateTimesheet"
                   class="input input-xs w-16"
-                  :class="
+                  :class="[
                     dayKey.startsWith('adj')
                       ? 'bg-yellow-100 border-yellow-300'
-                      : 'border-search_stroke_gray bg-off_white'
-                  "
+                      : 'border-search_stroke_gray bg-off_white',
+                    { 'opacity-50 cursor-not-allowed': !canUpdateTimesheet }
+                  ]"
                 />
               </td>
               <td>
                 <input
                   :value="weekData.days[dayKey].hourlyRate"
-                  @input="updateField(dayKey, 'hourlyRate', $event)"
+                  @input="canUpdateTimesheet ? updateField(dayKey, 'hourlyRate', $event) : null"
                   type="number"
                   min="0"
                   step="0.01"
+                  :readonly="!canUpdateTimesheet"
                   class="input input-xs w-20"
-                  :class="
+                  :class="[
                     dayKey.startsWith('adj')
                       ? 'bg-yellow-100 border-yellow-300'
-                      : 'border-search_stroke_gray bg-off_white'
-                  "
+                      : 'border-search_stroke_gray bg-off_white',
+                    { 'opacity-50 cursor-not-allowed': !canUpdateTimesheet }
+                  ]"
                 />
               </td>
               <td>
                 <input
                   :value="weekData.days[dayKey].minuteRate"
-                  @input="updateField(dayKey, 'minuteRate', $event)"
+                  @input="canUpdateTimesheet ? updateField(dayKey, 'minuteRate', $event) : null"
                   type="number"
                   min="0"
                   step="0.01"
+                  :readonly="!canUpdateTimesheet"
                   class="input input-xs w-20"
-                  :class="
+                  :class="[
                     dayKey.startsWith('adj')
                       ? 'bg-yellow-100 border-yellow-300'
-                      : 'border-search_stroke_gray bg-off_white'
-                  "
+                      : 'border-search_stroke_gray bg-off_white',
+                    { 'opacity-50 cursor-not-allowed': !canUpdateTimesheet }
+                  ]"
                 />
               </td>
               <td
@@ -242,17 +256,19 @@
               <label class="mb-1 block text-xs text-dark_gray/70">Hours</label>
               <input
                 :value="weekData.days[dayKey].hours"
-                @input="updateField(dayKey, 'hours', $event)"
+                @input="canUpdateTimesheet ? updateField(dayKey, 'hours', $event) : null"
                 type="number"
                 min="0"
                 max="24"
                 step="1"
+                :readonly="!canUpdateTimesheet"
                 class="input input-sm w-full"
-                :class="
+                :class="[
                   dayKey.startsWith('adj')
                     ? 'bg-yellow-100 border-yellow-300'
-                    : 'border-search_stroke_gray bg-off_white'
-                "
+                    : 'border-search_stroke_gray bg-off_white',
+                  { 'opacity-50 cursor-not-allowed': !canUpdateTimesheet }
+                ]"
               />
             </div>
             <div>
@@ -261,17 +277,19 @@
               >
               <input
                 :value="weekData.days[dayKey].minutes"
-                @input="updateField(dayKey, 'minutes', $event)"
+                @input="canUpdateTimesheet ? updateField(dayKey, 'minutes', $event) : null"
                 type="number"
                 min="0"
                 max="59"
                 step="1"
+                :readonly="!canUpdateTimesheet"
                 class="input input-sm w-full"
-                :class="
+                :class="[
                   dayKey.startsWith('adj')
                     ? 'bg-yellow-100 border-yellow-300'
-                    : 'border-search_stroke_gray bg-off_white'
-                "
+                    : 'border-search_stroke_gray bg-off_white',
+                  { 'opacity-50 cursor-not-allowed': !canUpdateTimesheet }
+                ]"
               />
             </div>
             <div>
@@ -280,16 +298,18 @@
               >
               <input
                 :value="weekData.days[dayKey].hourlyRate"
-                @input="updateField(dayKey, 'hourlyRate', $event)"
+                @input="canUpdateTimesheet ? updateField(dayKey, 'hourlyRate', $event) : null"
                 type="number"
                 min="0"
                 step="0.01"
+                :readonly="!canUpdateTimesheet"
                 class="input input-sm w-full"
-                :class="
+                :class="[
                   dayKey.startsWith('adj')
                     ? 'bg-yellow-100 border-yellow-300'
-                    : 'border-search_stroke_gray bg-off_white'
-                "
+                    : 'border-search_stroke_gray bg-off_white',
+                  { 'opacity-50 cursor-not-allowed': !canUpdateTimesheet }
+                ]"
               />
             </div>
             <div>
@@ -298,16 +318,18 @@
               >
               <input
                 :value="weekData.days[dayKey].minuteRate"
-                @input="updateField(dayKey, 'minuteRate', $event)"
+                @input="canUpdateTimesheet ? updateField(dayKey, 'minuteRate', $event) : null"
                 type="number"
                 min="0"
                 step="0.01"
+                :readonly="!canUpdateTimesheet"
                 class="input input-sm w-full"
-                :class="
+                :class="[
                   dayKey.startsWith('adj')
                     ? 'bg-yellow-100 border-yellow-300'
-                    : 'border-search_stroke_gray bg-off_white'
-                "
+                    : 'border-search_stroke_gray bg-off_white',
+                  { 'opacity-50 cursor-not-allowed': !canUpdateTimesheet }
+                ]"
               />
             </div>
           </div>
@@ -356,6 +378,20 @@ const emit = defineEmits<{
     value: any,
   ];
 }>();
+
+// Permission management
+const { hasPermission } = usePermissions();
+const canUpdateTimesheet = ref(false);
+
+// Check permissions on component mount
+const checkTimesheetPermissions = async () => {
+  canUpdateTimesheet.value = await hasPermission('timesheet.update');
+};
+
+// Run permission check when component mounts
+onMounted(() => {
+  checkTimesheetPermissions();
+});
 
 // Day configuration
 const dayKeys = [

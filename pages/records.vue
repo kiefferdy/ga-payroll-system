@@ -19,6 +19,10 @@ const {
   setSelectedWeek,
 } = usePayroll();
 
+// Permission management
+const { hasPermission } = usePermissions();
+const canUpdateTimesheet = ref(false);
+
 // Local reactive state
 const employees = ref<Employee[]>([]);
 const weekOptions = ref<WeekOption[]>([]);
@@ -67,11 +71,19 @@ const handleWeekSelected = async (week: WeekOption) => {
 };
 
 const handleUpdateDay = (dayKey: any, field: any, value: any) => {
+  if (!canUpdateTimesheet.value) {
+    console.warn('User does not have permission to update timesheet');
+    return;
+  }
   updateDayData(dayKey, { [field]: value });
   hasUnsavedChanges.value = true;
 };
 
 const handleUpdatePayroll = (field: any, value: any) => {
+  if (!canUpdateTimesheet.value) {
+    console.warn('User does not have permission to update payroll');
+    return;
+  }
   updatePayrollData({ [field]: value });
   hasUnsavedChanges.value = true;
 };
@@ -81,11 +93,19 @@ const handleApplyRates = (
   minuteRate: number,
   _options: any,
 ) => {
+  if (!canUpdateTimesheet.value) {
+    console.warn('User does not have permission to apply rates');
+    return;
+  }
   applyDefaultRates(hourlyRate, minuteRate);
   hasUnsavedChanges.value = true;
 };
 
 const handleSaveRequested = async () => {
+  if (!canUpdateTimesheet.value) {
+    console.warn('User does not have permission to save payroll data');
+    return;
+  }
   const success = await savePayrollData();
   if (success) {
     hasUnsavedChanges.value = false;
@@ -93,6 +113,10 @@ const handleSaveRequested = async () => {
 };
 
 const handleClearAdjustments = () => {
+  if (!canUpdateTimesheet.value) {
+    console.warn('User does not have permission to clear adjustments');
+    return;
+  }
   if (state.payrollData) {
     updatePayrollData({
       bale: 0,
@@ -128,9 +152,15 @@ const handleExportSummary = () => {
   exportPayrollSummary(exportData, 'pdf');
 };
 
+// Check timesheet permissions
+const checkTimesheetPermissions = async () => {
+  canUpdateTimesheet.value = await hasPermission('timesheet.update');
+};
+
 // Initialize data
 onMounted(async () => {
   try {
+    await checkTimesheetPermissions();
     employees.value = await fetchEmployees();
     weekOptions.value = generateWeeks();
     console.log("Loaded employees:", employees.value.length);
@@ -164,6 +194,7 @@ onMounted(async () => {
       :is-loading="state.isLoading"
       :has-unsaved-changes="hasUnsavedChanges"
       :error="state.error"
+      :can-update-timesheet="canUpdateTimesheet"
       @employee-selected="handleEmployeeSelected"
       @week-selected="handleWeekSelected"
       @save-requested="handleSaveRequested"
@@ -177,6 +208,7 @@ onMounted(async () => {
       <!-- Pay Configuration -->
       <PayrollCalculator
         :payroll-data="state.payrollData"
+        :can-update-timesheet="canUpdateTimesheet"
         @update-payroll="handleUpdatePayroll"
         @apply-rates="handleApplyRates"
       />
@@ -186,6 +218,7 @@ onMounted(async () => {
         :payroll-data="state.payrollData"
         :week-total="weekTotal"
         :selected-week="currentWeekLabel"
+        :can-update-timesheet="canUpdateTimesheet"
         @update-payroll="handleUpdatePayroll"
         @clear-adjustments="handleClearAdjustments"
         @carry-forward-balance="handleCarryForwardBalance"

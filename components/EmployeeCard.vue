@@ -127,7 +127,7 @@
       <!-- Action Buttons -->
       <div class="flex items-center justify-end space-x-2">
         <button
-          v-if="isAccountLocked"
+          v-if="isAccountLocked && canUnlockUsers"
           @click="handleUnlock"
           :disabled="isUnlocking"
           class="bg-orange-500 hover:bg-orange-600 btn btn-sm border-none text-white"
@@ -153,7 +153,7 @@
           </svg>
         </button>
 
-        <NuxtLink :to="`/edit-account/${employee.id}`">
+        <NuxtLink v-if="canUpdateUsers" :to="`/edit-account/${employee.id}`">
           <button
             class="bg-blue-500 hover:bg-blue-600 btn btn-sm border-none text-white"
             title="Edit Employee"
@@ -175,6 +175,7 @@
         </NuxtLink>
 
         <button
+          v-if="canDeleteUsers"
           @click="handleDelete"
           class="hover:bg-red-700 btn btn-sm border-none bg-clock_out_red text-white"
           title="Delete Employee"
@@ -193,6 +194,11 @@
             />
           </svg>
         </button>
+        
+        <!-- Read-only notice for users without permissions -->
+        <div v-if="!canUnlockUsers && !canUpdateUsers && !canDeleteUsers" class="text-xs text-gray-500 italic">
+          Read-only access
+        </div>
       </div>
     </div>
   </div>
@@ -209,6 +215,12 @@ const props = defineProps({
 });
 
 const emit = defineEmits(["employee-unlocked", "employee-deleted"]);
+
+// Permission management
+const { hasPermission } = usePermissions();
+const canUnlockUsers = ref(false);
+const canUpdateUsers = ref(false);
+const canDeleteUsers = ref(false);
 
 // Reactive state for unlock operation
 const isUnlocking = ref(false);
@@ -366,6 +378,13 @@ const handleDelete = async () => {
   }
 };
 
+// Check specific action permissions
+const checkActionPermissions = async () => {
+  canUnlockUsers.value = await hasPermission('users.unlock');
+  canUpdateUsers.value = await hasPermission('users.update');
+  canDeleteUsers.value = await hasPermission('users.delete');
+};
+
 // Verification check to see if user has required permissions
 const verifyUserPermissions = async () => {
   const {
@@ -375,12 +394,12 @@ const verifyUserPermissions = async () => {
   if (user) {
     try {
       // Check if user has users.read permission using the new permission system
-      const hasPermission = await $fetch('/api/check-user-permission', {
+      const hasReadPermission = await $fetch('/api/check-user-permission', {
         method: 'POST',
         body: { permission: 'users.read' }
       })
       
-      if (!hasPermission) {
+      if (!hasReadPermission) {
         alert("You do not have permission to view this page!");
         router.push("/");
       }
@@ -396,4 +415,5 @@ const verifyUserPermissions = async () => {
 
 // Functions to be run once page loads
 verifyUserPermissions();
+checkActionPermissions();
 </script>

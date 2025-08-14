@@ -1,7 +1,23 @@
 <template>
    <Title>Admin - Edit Account</Title>
-   <div class="card text-black flex justify-center h-[30rem] w-[35rem]">
-      <h1 class="card-title mb-5">Edit Account of {{ employee.first_name }} {{ employee.last_name }}</h1>
+   <div v-if="accessDenied" class="min-h-screen bg-primary_white flex items-center justify-center">
+      <div class="max-w-md mx-auto p-6 bg-red-50 border border-red-200 rounded-xl">
+         <div class="flex items-center mb-4">
+            <svg class="w-6 h-6 text-red-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+            </svg>
+            <h3 class="text-lg font-semibold text-red-800">Access Denied</h3>
+         </div>
+         <p class="text-red-700 mb-4">You don't have permission to edit employee information. Contact an administrator for access.</p>
+         <NuxtLink to="/employees">
+            <button class="btn bg-dark_green hover:bg-button_green text-white border-none">
+               Back to Employees
+            </button>
+         </NuxtLink>
+      </div>
+   </div>
+   <div v-else class="card text-black flex justify-center h-[30rem] w-[35rem]">
+      <h1 class="card-title mb-5">Edit Account of {{ firstName }} {{ lastName }}</h1>
       <div class="card card-side justify-between">
          <div>
             <label class="label-text text-black mt-4 font-bold">First Name*<br></label>
@@ -58,6 +74,7 @@
       <div v-if="emailTaken" class="mt-2 self-center error">The entered email address is already taken.</div>
       <div v-if="insertionError" class="mt-2 self-center error">A database error occurred! Please try again.</div>
       <div v-if="genericError" class="mt-2 self-center error">An error occurred!</div>
+      <div v-if="accessDenied" class="mt-2 self-center error">Access denied - insufficient permissions!</div>
    </div>
 </template>
  
@@ -86,6 +103,10 @@
    const router = useRouter();
    const route = useRoute();
 
+   // Permission management
+   const { hasPermission } = usePermissions();
+   const canUpdateUsers = ref(false);
+
    // Notifs
    const loadingNotif = ref(false);
    const editSuccess = ref(false);
@@ -96,6 +117,7 @@
    const emailTaken = ref(false);
    const insertionError = ref(false);
    const genericError = ref(false);
+   const accessDenied = ref(false);
 
    // Password validation
    const passwordErrors = ref([]);
@@ -164,6 +186,12 @@
    }
 
    const handleEdit = async () => {
+      // Check permission first
+      if (!canUpdateUsers.value) {
+         accessDenied.value = true;
+         return;
+      }
+
       // Verification of user input
       clearNotifs();
       await validateInputs();
@@ -368,29 +396,44 @@
       genericError.value = false;
    }
 
-   // Page is already protected by auth middleware with USERS_UPDATE permission
-   // No additional client-side verification needed
+   // Check user permissions
+   const checkUserPermissions = async () => {
+      canUpdateUsers.value = await hasPermission('users.update');
+      if (!canUpdateUsers.value) {
+         accessDenied.value = true;
+      }
+   };
 
-   // Fetch employee info from database
+   // Check permissions first
+   await checkUserPermissions();
+
+   // Fetch employee info from database (only if user has permission)
    const targetId = route.params.id;
-   const userEmail = await fetchUserEmail(targetId);
-   const { data: employee, error } = await supabase
-      .from('Employees')
-      .select('*')
-      .eq('id', targetId)
-      .single();
+   let userEmail = '';
+   let employee = null;
 
-   if (error) {
-      console.error('Error fetching target user from database:', error);
+   if (canUpdateUsers.value) {
+      userEmail = await fetchUserEmail(targetId);
+      const { data: employeeData, error } = await supabase
+         .from('Employees')
+         .select('*')
+         .eq('id', targetId)
+         .single();
+
+      if (error) {
+         console.error('Error fetching target user from database:', error);
+      } else {
+         employee = employeeData;
+      }
    }
 
    // Form fields
-   const firstName = ref(employee.first_name);
-   const lastName = ref(employee.last_name);
+   const firstName = ref(employee?.first_name || '');
+   const lastName = ref(employee?.last_name || '');
    const email = ref(userEmail);
    const password = ref('');
    const verifyPassword = ref('');
-   const needsOTP = ref(employee.requires_otp);
+   const needsOTP = ref(employee?.requires_otp || false);
    // Rank removed - now managed through roles system
 
 </script>
